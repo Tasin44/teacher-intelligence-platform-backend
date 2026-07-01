@@ -168,7 +168,35 @@ class VerifySignupOTPSerializer(serializers.Serializer):
 
 
 
+# ─────────────────────────────────────────────
+# LOGIN
+# ─────────────────────────────────────────────
+class LoginSerializer(serializers.Serializer):
+    email    = serializers.EmailField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
 
+    def validate(self, attrs):
+        email   = attrs["email"].strip().lower()
+        teacher = authenticate(email=email, password=attrs["password"])
+
+        if not teacher:
+            raise serializers.ValidationError(
+                {"non_field_errors": "Invalid email or password."})
+
+        if not teacher.is_verified:
+            raise serializers.ValidationError(
+                {"non_field_errors": "Account not verified. Please complete OTP verification."})
+
+        if not teacher.is_active:
+            raise serializers.ValidationError(
+                {"non_field_errors": "This account has been deactivated."})
+
+        attrs["_teacher"] = teacher
+        return attrs
+
+    def save(self):
+        teacher = self.validated_data["_teacher"]
+        return teacher, _issue_tokens(teacher)
 
 
 
