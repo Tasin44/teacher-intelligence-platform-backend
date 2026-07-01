@@ -44,3 +44,16 @@ def _validate_password_strength(value: str) -> str:
             "Password must contain at least one letter and one number."
         )
     return value
+
+
+# ─────────────────────────────────────────────
+# PUBLIC TEACHER PROFILE
+# ─────────────────────────────────────────────
+class TeacherPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Teacher
+        fields = ["teacher_id", "first_name", "last_name",
+                  "school_name", "grade", "room", "email", "is_verified"]
+
+
+
