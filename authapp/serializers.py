@@ -1,0 +1,46 @@
+
+
+
+
+import random
+import re
+import string
+from datetime import timedelta
+
+from django.contrib.auth import authenticate
+from django.core.cache import cache
+from django.db import transaction
+from django.utils import timezone
+from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import Teacher, OTPVerification
+
+
+# ─────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────
+def _generate_otp(length: int = 6) -> str:
+    """Cryptographically-safe 6-digit numeric OTP."""
+    return "".join(random.choices(string.digits, k=length))
+
+
+def _otp_expiry(minutes: int = 10):
+    return timezone.now() + timedelta(minutes=minutes)
+
+
+def _issue_tokens(teacher: Teacher) -> dict:
+    """Return access + refresh JWT pair."""
+    refresh = RefreshToken.for_user(teacher)
+    return {
+        "refresh": str(refresh),
+        "access":  str(refresh.access_token),
+    }
+
+
+def _validate_password_strength(value: str) -> str:
+    if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
+        raise serializers.ValidationError(
+            "Password must contain at least one letter and one number."
+        )
+    return value
