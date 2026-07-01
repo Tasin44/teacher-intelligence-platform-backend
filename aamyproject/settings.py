@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'authapp',
+    # 'authapp',
     'corsheaders',
 ]
 
@@ -125,7 +125,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = "authapp.User"
+# AUTH_USER_MODEL = "authapp.User"
 
 '''
 The issue is that Django REST Framework (DRF) was not configured in settings.py to use SimpleJWT for authentication. Because of this, DRF ignored the Authorization: Bearer <token> header entirely and fell back to the default Session/Basic authentication, which is why it told you that no credentials were provided.
