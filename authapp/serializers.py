@@ -198,7 +198,43 @@ class LoginSerializer(serializers.Serializer):
         teacher = self.validated_data["_teacher"]
         return teacher, _issue_tokens(teacher)
 
+# ─────────────────────────────────────────────
+# FORGOT PASSWORD — step 1  (send OTP)
+# ─────────────────────────────────────────────
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
+    def validate_email(self, value):
+        value = value.strip().lower()
+        # Security: don't reveal if account exists — store teacher privately
+        teacher = Teacher.objects.filter(email=value, is_active=True).first()
+        # Store as private attr; view decides response regardless
+        self._teacher = teacher
+        return value
+
+    @transaction.atomic
+    def save(self):
+        identifier = self.validated_data["email"]
+
+        # Only actually create OTP if teacher exists — caller always gets 200
+        if not self._teacher:
+            return None, identifier
+
+        OTPVerification.objects.filter(
+            identifier=identifier,
+            purpose=OTPVerification.Purpose.FORGOT_PASSWORD,
+            is_verified=False,
+        ).update(is_verified=True)
+
+        otp_code = _generate_otp()
+        OTPVerification.objects.create(
+            teacher    = self._teacher,
+            identifier = identifier,
+            otp_code   = otp_code,
+            purpose    = OTPVerification.Purpose.FORGOT_PASSWORD,
+            expires_at = _otp_expiry(minutes=10),
+        )
+        return otp_code, identifier
 
 
 
