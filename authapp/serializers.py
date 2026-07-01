@@ -57,3 +57,41 @@ class TeacherPublicSerializer(serializers.ModelSerializer):
 
 
 
+# ─────────────────────────────────────────────
+# SIGNUP — step 1
+# Validates uniqueness, stores pending data in Redis,
+# creates OTP record. Teacher row NOT created yet.
+# ─────────────────────────────────────────────
+class SignupSerializer(serializers.Serializer):
+    first_name  = serializers.CharField(max_length=100)
+    last_name   = serializers.CharField(max_length=100)
+    school_name = serializers.CharField(max_length=150)
+    grade       = serializers.CharField(max_length=20)
+    room        = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    email       = serializers.EmailField(max_length=250)
+    password    = serializers.CharField(write_only=True, min_length=8)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
