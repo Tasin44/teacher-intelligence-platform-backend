@@ -95,7 +95,7 @@ class SignupSerializer(serializers.Serializer):
 
         otp_code = _generate_otp()
         OTPVerification.objects.create(
-            teacher=None,#❓ why I"m passing none here
+            teacher=None,
             identifier=identifier,
             otp_code=otp_code,
             purpose=OTPVerification.Purpose.SIGNUP,
@@ -125,7 +125,7 @@ class VerifySignupOTPSerializer(serializers.Serializer):
                 otp_code=otp_code,
                 purpose=OTPVerification.Purpose.SIGNUP,
                 is_verified=False,
-            ).latest("created_at")#❓what is the purpose of latest here 
+            ).latest("created_at")
         except OTPVerification.DoesNotExist:
             raise serializers.ValidationError({"otp_code": "Invalid OTP."})
 
@@ -138,10 +138,33 @@ class VerifySignupOTPSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"otp_code": "Signup session expired. Please sign up again."})
 
-        attrs["_otp"]         = otp#❓why _otp , why not just otp?
+        attrs["_otp"]         = otp
         attrs["pending_data"] = pending_data
         return attrs
+    @transaction.atomic
+    def save(self):
+        otp: OTPVerification = self.validated_data["_otp"]
+        pending              = self.validated_data["pending_data"]
 
+        teacher = Teacher.objects.create_user(
+            email       = pending["email"],
+            password    = pending["password"],
+            first_name  = pending["first_name"],
+            last_name   = pending["last_name"],
+            school_name = pending["school_name"],
+            grade       = pending["grade"],
+            room        = pending.get("room") or None,
+            is_verified = True,
+        )
+
+        otp.is_verified = True
+        otp.teacher     = teacher
+        otp.save(update_fields=["is_verified", "teacher"])
+
+        # Clean up cache
+        cache.delete(f"signup_{otp.otp_code}")
+
+        return teacher, _issue_tokens(teacher)
 
 
 
