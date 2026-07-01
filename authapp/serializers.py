@@ -270,5 +270,44 @@ class VerifyForgotPasswordOTPSerializer(serializers.Serializer):
         return otp
 
 
+# ─────────────────────────────────────────────
+# RESET PASSWORD — step 3
+# ─────────────────────────────────────────────
+class ResetPasswordSerializer(serializers.Serializer):
+    # otp.id returned from verify step
+    reset_token      = serializers.IntegerField()
+    new_password     = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        return _validate_password_strength(value)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match."})
+
+        try:
+            otp = OTPVerification.objects.select_related("teacher").get(
+                id          = attrs["reset_token"],
+                purpose     = OTPVerification.Purpose.FORGOT_PASSWORD,
+                is_verified = True,   # must have been verified in step 2
+            )
+        except OTPVerification.DoesNotExist:
+            raise serializers.ValidationError(
+                {"reset_token": "Invalid or expired reset token."})
+
+        if not otp.teacher:
+            raise serializers.ValidationError({"reset_token": "Teacher not found."})
+
+        attrs["_teacher"] = otp.teacher
+        return attrs
+
+    @transaction.atomic
+    def save(self):
+        teacher: Teacher = self.validated_data["_teacher"]
+        teacher.set_password(self.validated_data["new_password"])
+        teacher.save(update_fields=["password", "updated_at"])
+        return teacher
 
 
