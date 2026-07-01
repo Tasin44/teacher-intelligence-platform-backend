@@ -72,6 +72,14 @@ class SignupSerializer(serializers.Serializer):
     password    = serializers.CharField(write_only=True, min_length=8)
 
 
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if Teacher.objects.filter(email=value).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
+    def validate_password(self, value):
+        return _validate_password_strength(value)
 
 
 
@@ -93,5 +101,3 @@ class SignupSerializer(serializers.Serializer):
 
 
 
-
-    
