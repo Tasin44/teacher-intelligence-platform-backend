@@ -81,7 +81,33 @@ class SignupSerializer(serializers.Serializer):
     def validate_password(self, value):
         return _validate_password_strength(value)
 
+    @transaction.atomic
+    def save(self):
+        data       = self.validated_data
+        identifier = data["email"]
 
+        # Invalidate any previous pending signup OTPs for this email
+        OTPVerification.objects.filter(
+            identifier=identifier,
+            purpose=OTPVerification.Purpose.SIGNUP,
+            is_verified=False,
+        ).update(is_verified=True)
+
+        otp_code = _generate_otp()
+        OTPVerification.objects.create(
+            teacher=None,#❓ why I"m passing none here
+            identifier=identifier,
+            otp_code=otp_code,
+            purpose=OTPVerification.Purpose.SIGNUP,
+            expires_at=_otp_expiry(minutes=10),
+        )
+
+        # Cache pending signup data keyed by otp_code (TTL = 10 min)
+        # so the verify step can reconstruct the teacher row without
+        # asking the client to re-send sensitive fields.
+        cache.set(f"signup_{otp_code}", data, timeout=600)
+
+        return otp_code, identifier
 
 
 
