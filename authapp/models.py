@@ -3,7 +3,7 @@ from django.db import models
 # Create your models here.
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
-
+from django.utils import timezone
 
 # ─────────────────────────────────────────────
 # CUSTOM USER MANAGER
@@ -59,7 +59,48 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
 
 
 
+# ─────────────────────────────────────────────
+# OTP VERIFICATION
+# ─────────────────────────────────────────────
+class OTPVerification(models.Model):
+    """
+    Handles all OTP flows:
+    - signup          → teacher is NULL (row doesn't exist yet)
+    - forgot_password → teacher is set
+    """
 
+    class Purpose(models.TextChoices):
+        SIGNUP          = "signup",          "Signup"
+        FORGOT_PASSWORD = "forgot_password", "Forgot Password"
+
+    # NULL during signup because the teacher row doesn't exist yet
+    teacher = models.ForeignKey(
+        Teacher,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="otps",
+    )
+    # The email the OTP was sent to
+    identifier = models.EmailField(max_length=250)
+    otp_code   = models.CharField(max_length=6)
+    purpose    = models.CharField(max_length=30, choices=Purpose.choices)
+    is_verified = models.BooleanField(default=False)
+    expires_at  = models.DateTimeField()
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "otp_verifications"
+        indexes  = [
+            models.Index(fields=["otp_code"]),
+            models.Index(fields=["identifier"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def is_expired(self) -> bool:
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"OTP({self.purpose}) → {self.identifier}"
 
 
 
