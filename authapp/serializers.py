@@ -111,7 +111,36 @@ class SignupSerializer(serializers.Serializer):
 
 
 
+# ─────────────────────────────────────────────
+# SIGNUP — step 2  (OTP verify → create teacher)
+# ─────────────────────────────────────────────
+class VerifySignupOTPSerializer(serializers.Serializer):
+    otp_code = serializers.CharField(max_length=6, min_length=6)
 
+    def validate(self, attrs):
+        otp_code = attrs["otp_code"]
+
+        try:
+            otp = OTPVerification.objects.filter(
+                otp_code=otp_code,
+                purpose=OTPVerification.Purpose.SIGNUP,
+                is_verified=False,
+            ).latest("created_at")#❓what is the purpose of latest here 
+        except OTPVerification.DoesNotExist:
+            raise serializers.ValidationError({"otp_code": "Invalid OTP."})
+
+        if otp.is_expired():
+            raise serializers.ValidationError(
+                {"otp_code": "OTP has expired. Please request a new one."})
+
+        pending_data = cache.get(f"signup_{otp_code}")
+        if not pending_data:
+            raise serializers.ValidationError(
+                {"otp_code": "Signup session expired. Please sign up again."})
+
+        attrs["_otp"]         = otp#❓why _otp , why not just otp?
+        attrs["pending_data"] = pending_data
+        return attrs
 
 
 
