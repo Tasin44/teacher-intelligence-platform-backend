@@ -238,7 +238,36 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
 
 
+# ─────────────────────────────────────────────
+# FORGOT PASSWORD — step 2  (verify OTP)
+# ─────────────────────────────────────────────
+class VerifyForgotPasswordOTPSerializer(serializers.Serializer):
+    email    = serializers.EmailField()
+    otp_code = serializers.CharField(max_length=6, min_length=6)
 
+    def validate(self, attrs):
+        try:
+            otp = OTPVerification.objects.get(
+                identifier  = attrs["email"].strip().lower(),
+                otp_code    = attrs["otp_code"],
+                purpose     = OTPVerification.Purpose.FORGOT_PASSWORD,
+                is_verified = False,
+            )
+        except OTPVerification.DoesNotExist:
+            raise serializers.ValidationError({"otp_code": "Invalid OTP."})
+
+        if otp.is_expired():
+            raise serializers.ValidationError({"otp_code": "OTP has expired."})
+
+        attrs["_otp"] = otp
+        return attrs
+
+    def save(self):
+        otp             = self.validated_data["_otp"]
+        otp.is_verified = True
+        otp.save(update_fields=["is_verified"])
+        # Return otp.id as the reset_token the client sends back in step 3
+        return otp
 
 
 
