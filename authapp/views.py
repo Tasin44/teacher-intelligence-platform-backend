@@ -85,3 +85,29 @@ class VerifySignupOTPView(StandardResponseMixin, APIView):
             message     = "Account created successfully.",
             status_code = status.HTTP_201_CREATED,
         )
+
+# ─────────────────────────────────────────────
+# LOGIN
+# POST /api/auth/login
+# ─────────────────────────────────────────────
+class LoginView(StandardResponseMixin, APIView):
+    permission_classes = [AllowAny]
+    throttle_scope     = "auth"
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self.error_response(
+                "Login failed",
+                status.HTTP_401_UNAUTHORIZED,
+                serializer.errors,
+            )
+        teacher, tokens = serializer.save()
+
+        return self.success_response(
+            data    = {"teacher": TeacherPublicSerializer(teacher).data, "tokens": tokens},
+            message = "Login successful.",
+        )
+
+
+
