@@ -14,10 +14,15 @@ from .serializers import StudentCreateSerializer,StudentListSerializer
 class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
 
-    pass
+    permission_classes = [IsAuthenticated,IsOwnerTeacher]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["risk_status", "student_grade", "recommended_group"]
+    search_fields = ["student_name", "student_roll", "parent_name"]
+    ordering_fields = ["student_name", "avg_score", "attendance_rate", "created_at"]
 
-
-
+    def get_throttles(self):
+        self.throttle_scope = "read" if self.request.method in ("GET",) else "write"
+        return super().get_throttles()
 
 
 
