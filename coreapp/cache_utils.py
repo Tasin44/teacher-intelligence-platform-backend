@@ -18,3 +18,16 @@ def teacher_cache_version(teacher_id: int) -> int:
         version = 1
         cache.set(key, version, timeout=None)
     return version
+
+def bump_teacher_cache_version(teacher_id: int) -> None:
+    """Call this on any write that affects a teacher's dashboard/list caches.
+    Cheap O(1) invalidation instead of deleting many individual keys."""
+    key = f"{CACHE_VERSION_PREFIX}:{teacher_id}"
+    try:
+        cache.incr(key)
+    except ValueError:
+        cache.set(key, 2, timeout=None)
+
+
+def scoped_cache_key(teacher_id: int, name: str) -> str:
+    return f"{name}:t{teacher_id}:v{teacher_cache_version(teacher_id)}"
