@@ -27,3 +27,15 @@ class StudentCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["teacher"] = self.context["request"].user
         return super().create(validated_data)
+
+
+class StudentListSerializer(serializers.ModelSerializer):
+    recommended_group_name = serializers.CharField(source="recommended_group.group_name",
+                                                     read_only=True, default=None)
+
+    class Meta:
+        model = Student
+        fields = ["student_id", "student_name", "student_roll", "student_image",
+                  "student_grade", "risk_status", "reading_level", "parent_name",
+                  "parent_email", "avg_score", "attendance_rate",
+                  "recommended_group_name", "created_at"]
