@@ -34,3 +34,12 @@ class Group(models.Model):
 
     def __str__(self):
         return self.group_name
+
+class GroupStudent(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="memberships")
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="group_memberships")
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "group_students"
+        unique_together = ("group", "student")
