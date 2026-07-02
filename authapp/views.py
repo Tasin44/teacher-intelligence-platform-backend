@@ -1,3 +1,5 @@
+from django.db.models.lookups import IntegerLessThanOrEqual
+from rest_framework import permissions
 from django.shortcuts import render
 
 # Create your views here.
@@ -122,4 +124,63 @@ class MeView(StandardResponseMixin, APIView):
         return self.success_response(
             data    = TeacherPublicSerializer(request.user).data,
             message = "Profile fetched successfully.",
+        )
+
+# ─────────────────────────────────────────────
+# FORGOT PASSWORD — step 1  (send OTP)
+# POST /api/auth/forgot-password
+# ─────────────────────────────────────────────
+class ForgotPasswordView(StandardResponseMixin, APIView):
+    """
+    Always returns 200 to avoid revealing whether the email is registered
+    (prevents account enumeration attacks).
+    """
+    permission_classes = [AllowAny]
+    throttle_scope     = "auth"
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        # We handle errors manually (not raise_exception=True) so we can
+        # always return 200 and never leak whether an account exists.
+        if not serializer.is_valid():
+            # Only real validation error here is a malformed email field
+            if "email" in serializer.errors and "already exists" not in str(serializer.errors):
+                return self.error_response(
+                    "Validation Error",
+                    status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    serializer.errors,
+                )
+
+        otp_code, identifier = serializer.save()
+
+        if otp_code:
+            _send_otp(identifier, otp_code, "forgot_password")
+
+        return self.success_response(
+            data    = {},
+            message = "If an account with this email exists, an OTP has been sent.",
+        )
+
+
+# ─────────────────────────────────────────────
+# FORGOT PASSWORD — step 2  (verify OTP)
+# POST /api/auth/forgot-password/verify
+# ─────────────────────────────────────────────
+class VerifyForgotPasswordOTPView(StandardResponseMixin, APIView):
+    permission_classes = [AllowAny]
+    throttle_scope     = "auth"
+
+    def post(self, request):
+        serializer = VerifyForgotPasswordOTPSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self.error_response(
+                "OTP verification failed",
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                serializer.errors,
+            )
+        otp = serializer.save()
+
+        return self.success_response(
+            data    = {"reset_token": otp.id},
+            message = "OTP verified. Proceed to reset your password.",
         )
