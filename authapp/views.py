@@ -184,3 +184,27 @@ class VerifyForgotPasswordOTPView(StandardResponseMixin, APIView):
             data    = {"reset_token": otp.id},
             message = "OTP verified. Proceed to reset your password.",
         )
+
+
+# ─────────────────────────────────────────────
+# RESET PASSWORD — step 3
+# POST /api/auth/reset-password
+# ─────────────────────────────────────────────
+class ResetPasswordView(StandardResponseMixin, APIView):
+    permission_classes = [AllowAny]
+    throttle_scope     = "auth"
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self.error_response(
+                "Password reset failed",
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                serializer.errors,
+            )
+        serializer.save()
+
+        return self.success_response(
+            data    = {},
+            message = "Password reset successfully. Please log in.",
+        )
