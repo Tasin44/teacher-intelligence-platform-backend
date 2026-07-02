@@ -54,3 +54,34 @@ class SignupView(StandardResponseMixin, APIView):
             data    = {"identifier": identifier},
             message = "OTP sent to your email. Please verify within 10 minutes.",
         )
+
+
+# ─────────────────────────────────────────────
+# SIGNUP — step 2  (OTP verify → create teacher)
+# POST /api/auth/signup/verify
+# ─────────────────────────────────────────────
+class VerifySignupOTPView(StandardResponseMixin, APIView):
+    """
+    Verifies OTP → creates Teacher row → returns JWT tokens.
+    """
+    permission_classes = [AllowAny]
+    throttle_scope     = "auth"
+
+    def post(self, request):
+        serializer = VerifySignupOTPSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self.error_response(
+                "OTP verification failed",
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                serializer.errors,
+            )
+        teacher, tokens = serializer.save() # cause on the verifysignupotpserializer, it's returning teacher, token
+
+        return self.success_response(
+            data = {
+                "teacher": TeacherPublicSerializer(teacher).data,
+                "tokens":  tokens,
+            },
+            message     = "Account created successfully.",
+            status_code = status.HTTP_201_CREATED,
+        )
