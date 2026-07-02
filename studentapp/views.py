@@ -30,5 +30,16 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                 .filter(teacher=self.request.user)
                 .select_related("recommended_group"))
 
+    def get_serializer_class(self):
+        return StudentCreateSerializer if self.action in ("create", "update", "partial_update") \
+            else StudentListSerializer
 
-
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return self.error_response("Could not create student",
+                                        status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+        student = serializer.save()
+        bump_teacher_cache_version(request.user.id)
+        return self.success_response(StudentListSerializer(student).data,
+                                      "Student created", status.HTTP_201_CREATED)
