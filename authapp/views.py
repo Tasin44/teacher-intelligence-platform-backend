@@ -110,4 +110,16 @@ class LoginView(StandardResponseMixin, APIView):
         )
 
 
+# ─────────────────────────────────────────────
+# ME
+# GET /api/auth/me
+# ─────────────────────────────────────────────
+class MeView(StandardResponseMixin, APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
 
+    def get(self, request):
+        return self.success_response(
+            data    = TeacherPublicSerializer(request.user).data,
+            message = "Profile fetched successfully.",
+        )
