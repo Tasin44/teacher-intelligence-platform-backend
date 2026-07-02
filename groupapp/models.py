@@ -43,3 +43,16 @@ class GroupStudent(models.Model):
     class Meta:
         db_table = "group_students"
         unique_together = ("group", "student")
+
+
+class GroupGenerationHistory(models.Model):
+    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                 related_name="group_generations")
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="history_entries")
+    generated_date = models.DateTimeField(auto_now_add=True)
+    classification = models.CharField(max_length=20, choices=Group.Classification.choices)
+
+    class Meta:
+        db_table = "group_generation_history"
+        ordering = ["-generated_date"]
+
