@@ -24,7 +24,11 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         self.throttle_scope = "read" if self.request.method in ("GET",) else "write"
         return super().get_throttles()
 
-
+    def get_queryset(self):
+        # select_related avoids an extra query per row for recommended_group
+        return (Student.objects
+                .filter(teacher=self.request.user)
+                .select_related("recommended_group"))
 
 
 
