@@ -43,7 +43,11 @@ def _composite_score(student) -> float:
         2,
     )
 
-
+def _classify(composite: float):
+    for threshold, classification, tag in TIERS:
+        if composite >= threshold:
+            return classification, tag
+    return Group.Classification.RISK, Group.Tag.BELOW
 
 
 
