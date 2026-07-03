@@ -51,3 +51,48 @@ def _classify(composite: float):
 
 
 
+def generate_groups(teacher) -> list[Group]:
+    """
+    Regenerates all AI groups for a teacher. Existing AI-generated groups
+    are cleared and rebuilt so re-running stays idempotent.
+    """
+    students = list(Student.objects.filter(teacher=teacher).prefetch_related("behavior_feedback"))
+    if not students:
+        return []
+
+    scored = [(_composite_score(s), s) for s in students]
+    scored.sort(key=lambda pair: pair[0], reverse=True)  # O(n log n) sort by composite score
+
+    buckets: dict[str, list] = {}
+    for composite, student in scored:
+        classification, tag = _classify(composite)
+        buckets.setdefault(classification, []).append((student, composite))
+
+    Group.objects.filter(teacher=teacher, generated_by_ai=True).delete()  # cascades GroupStudent
+
+    created_groups = []
+    letter_index = 0
+    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for threshold, classification, tag in TIERS:
+        members = buckets.get(classification, [])
+        if not members:
+            continue
+        avg = round(sum(c for _, c in members) / len(members), 2)
+        group = Group.objects.create(
+            teacher=teacher,
+            group_name=f"Group {letters[letter_index % len(letters)]}",
+            classification=classification,
+            tag=tag,
+            avg_score=avg,
+            total_students=len(members),
+            generated_by_ai=True,
+        )
+        letter_index += 1
+        GroupStudent.objects.bulk_create([
+            GroupStudent(group=group, student=s) for s, _ in members
+        ])
+        Student.objects.filter(pk__in=[s.pk for s, _ in members]).update(recommended_group=group)
+        GroupGenerationHistory.objects.create(teacher=teacher, group=group, classification=classification)
+        created_groups.append(group)
+
+    return created_groups
