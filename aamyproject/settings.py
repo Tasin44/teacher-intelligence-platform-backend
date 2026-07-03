@@ -44,7 +44,9 @@ INSTALLED_APPS = [
     'coreapp',
     'dashboardapp',
     'groupapp',
-    'studentapp'
+    'studentapp',
+    'feedbackapp',
+    'assignmentapp'
 ]
 
 MIDDLEWARE = [
