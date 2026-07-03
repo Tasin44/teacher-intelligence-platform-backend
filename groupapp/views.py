@@ -53,7 +53,8 @@ class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return Group.objects.filter(teacher=self.request.user).prefetch_related("memberships__student")
 
 
-
+    def get_serializer_class(self):
+        return GroupEditSerializer if self.action == "partial_update" else GroupSerializer
 
 
 
