@@ -66,7 +66,15 @@ class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return self.success_response(GroupSerializer(self.get_object()).data, "Group fetched")
 
 
-
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = GroupEditSerializer(instance, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                        serializer.errors)
+        group = serializer.save()
+        bump_teacher_cache_version(request.user.id)
+        return self.success_response(GroupSerializer(group).data, "Group updated")
 
 
 
