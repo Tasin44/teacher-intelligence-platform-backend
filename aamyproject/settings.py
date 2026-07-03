@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     'authapp',
     'corsheaders',
     'coreapp',
+    'dashboardapp',
+    'groupapp',
+    'studentapp'
 ]
 
 MIDDLEWARE = [
