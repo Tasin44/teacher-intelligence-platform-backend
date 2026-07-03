@@ -56,7 +56,10 @@ class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         return GroupEditSerializer if self.action == "partial_update" else GroupSerializer
 
-
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = GroupSerializer(page, many=True)
+        return self.success_response(self.get_paginated_response(serializer.data).data,"Groups fetched")
 
 
 
