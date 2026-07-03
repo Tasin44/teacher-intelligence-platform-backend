@@ -43,3 +43,9 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         bump_teacher_cache_version(request.user.id)
         return self.success_response(StudentListSerializer(student).data,
                                       "Student created", status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.filter_queryset(self.get_queryset()))
+        serializer = self.get_serializer(page, many=True)
+        return self.success_response(self.get_paginated_response(serializer.data).data,
+                                      "Students fetched")
