@@ -62,7 +62,8 @@ class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return self.success_response(self.get_paginated_response(serializer.data).data,"Groups fetched")
 
 
-
+    def retrieve(self, request, *args, **kwargs):
+        return self.success_response(GroupSerializer(self.get_object()).data, "Group fetched")
 
 
 
