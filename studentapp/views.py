@@ -66,6 +66,12 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return self.success_response(StudentListSerializer(student).data, "Student updated")
 
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        bump_teacher_cache_version(request.user.id)
+        return self.success_response(None, "Student deleted")
+
 
 
 
