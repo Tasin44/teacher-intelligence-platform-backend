@@ -34,3 +34,35 @@ class GenerateGroupsView(StandardResponseMixin, APIView):
         bump_teacher_cache_version(request.user.id)
         return self.success_response(GroupSerializer(groups, many=True).data,
                                       "Groups generated", status.HTTP_201_CREATED) 
+
+
+
+class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
+
+
+
+    permission_classes = [IsAuthenticated, IsOwnerTeacher]
+    http_method_names = ["get", "patch", "head", "options"]
+
+
+    def get_throttles(self):
+        self.throttle_scope = "read" if self.request.method == "GET" else "write"
+        return super().get_throttles()
+
+    def get_queryset(self):
+        return Group.objects.filter(teacher=self.request.user).prefetch_related("memberships__student")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
