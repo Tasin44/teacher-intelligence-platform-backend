@@ -39,7 +39,11 @@ class GenerateGroupsView(StandardResponseMixin, APIView):
 
 class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
-
+    """
+    GET   /api/groups               -> list generated groups
+    GET   /api/groups/{id}
+    PATCH /api/groups/{id}          -> edit name/tag/classification
+    """
 
     permission_classes = [IsAuthenticated, IsOwnerTeacher]
     http_method_names = ["get", "patch", "head", "options"]
