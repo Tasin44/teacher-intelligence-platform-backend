@@ -82,4 +82,20 @@ class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
 
 
+class GroupStatsView(StandardResponseMixin, APIView):
+    """GET /api/groups/stats -> total students, total groups, avg group size, last formed date"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
 
+    def get(self, request):
+        groups = Group.objects.filter(teacher=request.user)
+        last_formed = groups.aggregate(last_formed=Max("generated_at"))["last_formed"]
+        total_groups = groups.count()
+        total_students = sum(groups.values_list("total_students", flat=True))
+        avg_size = round(total_students / total_groups, 2) if total_groups else 0
+        return self.success_response({
+            "total_students": total_students,
+            "total_groups": total_groups,
+            "avg_group_size": avg_size,
+            "last_group_formed": last_formed,
+        }, "Group stats fetched")
