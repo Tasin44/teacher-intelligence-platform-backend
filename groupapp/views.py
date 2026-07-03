@@ -99,3 +99,15 @@ class GroupStatsView(StandardResponseMixin, APIView):
             "avg_group_size": avg_size,
             "last_group_formed": last_formed,
         }, "Group stats fetched")
+
+
+class GroupGenerationHistoryView(StandardResponseMixin, APIView):
+    """GET /api/groups/history"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
+
+    def get(self, request):
+        rows = (GroupGenerationHistory.objects.filter(teacher=request.user)
+                .select_related("group").order_by("-generated_date")[:200])
+        return self.success_response(GroupGenerationHistorySerializer(rows, many=True).data,"Generation history fetched")
+
