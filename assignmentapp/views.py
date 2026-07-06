@@ -103,3 +103,12 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
         assignment.refresh_from_db()
         return self.success_response(AssignmentListSerializer(assignment).data,"Assignment generated and sent", status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.filter_queryset(self.get_queryset()))
+        serializer = AssignmentListSerializer(page, many=True)
+        return self.success_response(self.get_paginated_response(serializer.data).data,"Assignments fetched")
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return self.success_response(AssignmentListSerializer(instance).data, "Assignment fetched")
