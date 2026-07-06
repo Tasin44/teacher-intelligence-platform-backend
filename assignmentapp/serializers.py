@@ -25,7 +25,15 @@ class AssignmentCreateSerializer(serializers.ModelSerializer):
 
 
 
-
+    def validate(self, attrs):
+        target_type = attrs.get("target_type")
+        if target_type == Assignment.TargetType.STUDENT and not attrs.get("target_student_roll"):
+            raise serializers.ValidationError(
+                {"target_student_roll": "Required when target_type is individual_student"})
+        if target_type == Assignment.TargetType.GROUP and not attrs.get("target_group_id"):
+            raise serializers.ValidationError(
+                {"target_group_id": "Required when target_type is individual_group"})
+        return attrs
 
 
 
