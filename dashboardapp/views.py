@@ -14,6 +14,38 @@ from .models import ActivityLog
 
 
 
+class DashboardSummaryView(StandardResponseMixin, APIView):
+    """
+    GET /api/dashboard/summary
+    -> total / risk / on_track / advance / developing student counts.
+    Cached per-teacher; invalidated automatically whenever a student row changes
+    (bump_teacher_cache_version is called from the students app on write).
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
+
+    def get(self, request):
+        cache_key = scoped_cache_key(request.user.id, "dashboard_summary")
+        data = cache.get(cache_key)
+        if data is None:
+            counts = (Student.objects.filter(teacher=request.user).values("risk_status").annotate(c=Count("student_id")))
+            bucket = {row["risk_status"]: row["c"] for row in counts}
+            data = {
+                "total_students": sum(bucket.values()),
+                "risk_students": bucket.get("at_risk", 0),
+                "on_track_students": bucket.get("on_track", 0),
+                "advance_students": bucket.get("advance", 0),
+                "developing_students": bucket.get("developing", 0),
+            }
+            cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
+        return self.success_response(data, "Dashboard summary fetched")
+
+
+
+
+
+
+
 
 
 
