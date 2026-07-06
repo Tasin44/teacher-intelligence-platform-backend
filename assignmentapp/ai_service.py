@@ -41,3 +41,24 @@ def generate_assignment_questions(*, subject: str, ccss_code: str, difficulty: s
         f"Number of questions: {number_of_questions}\n"
         f"Lesson/task instructions: {instructions or 'N/A'}"
     )
+    try:
+        client = _client()
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.5,
+            max_tokens=1200,
+        )
+        raw = response.choices[0].message.content
+        parsed = json.loads(raw)
+        questions = parsed.get("questions", [])
+        if not isinstance(questions, list) or not questions:
+            raise AIGenerationError("AI returned no questions")
+        return [str(q).strip() for q in questions[:number_of_questions]]
+    except (OpenAIError, json.JSONDecodeError, KeyError) as exc:
+        logger.error("AI question generation failed: %s", exc)
+        raise AIGenerationError(str(exc)) from exc
