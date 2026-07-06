@@ -12,3 +12,7 @@ class OffDaySerializer(serializers.ModelSerializer):
         if OffDay.objects.filter(teacher=teacher, off_date=value).exists():
             raise serializers.ValidationError("This date is already marked as an off day")
         return value
+
+    def create(self, validated_data):
+        validated_data["teacher"] = self.context["request"].user
+        return super().create(validated_data)
