@@ -16,3 +16,32 @@ class OffDaySerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["teacher"] = self.context["request"].user
         return super().create(validated_data)
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    student_roll = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = ["attendance_id", "student_roll", "attendance_date", "status"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
