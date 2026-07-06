@@ -71,7 +71,9 @@ class AssignmentListSerializer(serializers.ModelSerializer):
     target_student_name = serializers.CharField(source="target_student.student_name",read_only=True, default=None)
     target_group_name = serializers.CharField(source="target_group.group_name",read_only=True, default=None)
 
-
+    class Meta:
+        model = Assignment
+        fields = ["assignment_id", "title", "subject", "target_type", "target_student_name","target_group_name", "ai_difficulty", "ccss_code", "creation_date", "due_date","instructions", "number_of_questions", "unique_assignment_code", "tag","ai_generation_status", "questions"]
 
 
 
