@@ -90,3 +90,16 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             # rather than silently losing the due-date/instructions they entered.
             return self.error_response(f"Assignment Instructions saved but AI question generation failed: {exc}",status.HTTP_502_BAD_GATEWAY,{"assignment_id": assignment.assignment_id})
         assignment.save(update_fields=["ai_generation_status"])
+        # --- email parents of every targeted student ---
+        targets = _resolve_target_students(assignment)
+        for student in targets:
+            if student.parent_email:
+                # send_assignment_email.delay(...) recommended via Celery in production
+                AssignmentMailLog.objects.create(
+                    assignment=assignment, student=student, parent_email=student.parent_email)
+
+        _log_activity(request.user.id, "assignment_created",f"Assignment '{assignment.title}' created and sent to {len(targets)} parent(s)",assignment.assignment_id)
+        bump_teacher_cache_version(request.user.id)
+
+        assignment.refresh_from_db()
+        return self.success_response(AssignmentListSerializer(assignment).data,"Assignment generated and sent", status.HTTP_201_CREATED)
