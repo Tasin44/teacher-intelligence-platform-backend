@@ -47,6 +47,9 @@ INSTALLED_APPS = [
     'studentapp',
     'feedbackapp',
     'assignmentapp'
+    'attendenceapp',
+    'behaviorapp',
+    'observationsapp',
 ]
 
 MIDDLEWARE = [
