@@ -61,6 +61,11 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     def get_serializer_class(self):
         return AssignmentCreateSerializer if self.action == "create" else AssignmentListSerializer
 
-
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = AssignmentCreateSerializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            return self.error_response("Could not create assignment",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+        assignment = serializer.save()
 
 
