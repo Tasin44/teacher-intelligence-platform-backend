@@ -14,3 +14,17 @@ from coreapp.cache_utils import (CACHE_TTL_LISTS, bump_teacher_cache_version,bin
 from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from .models import Assignment, AssignmentQuestion, AssignmentMailLog
+
+
+def _resolve_target_students(assignment: Assignment):
+    """Flatten target_type into a concrete list of Student rows to notify."""
+    from studentapp.models import Student
+    if assignment.target_type == Assignment.TargetType.STUDENT and assignment.target_student:
+        return [assignment.target_student]
+    if assignment.target_type == Assignment.TargetType.GROUP and assignment.target_group:
+        return list(Student.objects.filter(
+            group_memberships__group=assignment.target_group))
+    if assignment.target_type == Assignment.TargetType.ALL_GROUPS:
+        return list(Student.objects.filter(teacher=assignment.teacher))
+    return []
+
