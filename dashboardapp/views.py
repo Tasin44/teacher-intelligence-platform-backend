@@ -60,7 +60,18 @@ class SubjectPerformanceView(StandardResponseMixin, APIView):
         return self.success_response(data, "Subject performance fetched")
 
 
+class RecentActivityView(StandardResponseMixin, APIView):
+    """GET /api/dashboard/recent-activity?limit=20"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
 
+    def get(self, request):
+        limit = min(int(request.query_params.get("limit", 20)), 100)
+        rows = (ActivityLog.objects.filter(teacher=request.user)
+                .order_by("-created_at")[:limit])
+        data = [{"activity_type": r.activity_type, "description": r.description,
+                 "created_at": r.created_at} for r in rows]
+        return self.success_response(data, "Recent activity fetched")
 
 
 
