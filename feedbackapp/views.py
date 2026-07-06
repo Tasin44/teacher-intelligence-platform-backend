@@ -56,6 +56,10 @@ class AssignmentFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return self.success_response(AssignmentFeedbackSerializer(row).data, "Row updated")
 
 
+    def destroy(self,request,*args,**kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return self.success_response(None,"Row deleted")
 
 
 
