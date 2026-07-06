@@ -60,3 +60,21 @@ class AttendanceView(StandardResponseMixin, APIView):
             "monthly_attendance_rate": monthly_rate,
         }, "Attendance recorded", status.HTTP_201_CREATED)
 
+
+
+class StudentMonthlyAttendanceView(StandardResponseMixin, APIView):
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
+
+
+
+
+
+
+
+
+
+
+
+
