@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.core.cache import cache
 from django.db import transaction 
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filter,status,viewsets
+from rest_framework import filters,status,viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -31,3 +31,27 @@ def _resolve_target_students(assignment: Assignment):
 def _log_activity(teacher_id, activity_type, description, reference_id=None):
     from dashboardapp.models import ActivityLog
     ActivityLog.objects.create(teacher_id=teacher_id, activity_type=activity_type,description=description, reference_id=reference_id)
+
+
+
+
+
+class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
+
+
+    permission_classes = [IsAuthenticated, IsOwnerTeacher]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ["subject", "tag", "target_type", "ai_generation_status"]
+    ordering_fields = ["due_date", "creation_date", "title"]
+
+
+
+
+
+
+
+
+
+
+
+
