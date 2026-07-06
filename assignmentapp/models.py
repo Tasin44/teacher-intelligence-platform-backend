@@ -56,3 +56,13 @@ class Assignment(models.Model):
 
     def __str__(self):
         return f"{self.title} [{self.unique_assignment_code}]"
+
+class AssignmentQuestion(models.Model):
+    question_id = models.BigAutoField(primary_key=True)
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="questions")
+    question_text = models.TextField()
+    question_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "assignment_questions"
+        ordering = ["question_order"]

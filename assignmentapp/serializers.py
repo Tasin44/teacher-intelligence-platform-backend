@@ -60,7 +60,10 @@ class AssignmentCreateSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
-
+class AssignmentQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignmentQuestion
+        fields = ["question_id", "question_text", "question_order"]
 
 
 
