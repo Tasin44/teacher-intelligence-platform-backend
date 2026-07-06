@@ -117,3 +117,47 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         return self.success_response(AssignmentListSerializer(instance).data, "Assignment fetched")
+
+
+    @action(detail=False, methods=["get"])
+    def search(self, request):
+        """
+        GET /api/assignments/search?q=<prefix>
+        Maintains a per-teacher cached, sorted list of titles and uses
+        binary search (O(log n)) instead of scanning every row.
+        """
+        q = request.query_params.get("q", "").strip()
+        if not q:
+            return self.error_response("q query param is required", status.HTTP_400_BAD_REQUEST)
+
+        cache_key = scoped_cache_key(request.user.id, "assignment_titles_sorted")
+        sorted_titles = cache.get(cache_key)
+        if sorted_titles is None:
+            sorted_titles = list(
+                Assignment.objects.filter(teacher=request.user)
+                .order_by("title").values_list("title", flat=True)
+            )
+            cache.set(cache_key, sorted_titles, timeout=CACHE_TTL_LISTS)
+
+        idx = binary_search_title_prefix(sorted_titles, q)
+        if idx == -1:
+            return self.success_response([], "No matching assignments")
+
+        matches = []
+        i = idx
+        while i < len(sorted_titles) and sorted_titles[i].lower().startswith(q.lower()):
+            matches.append(sorted_titles[i])
+            i += 1
+
+        results = Assignment.objects.filter(teacher=request.user, title__in=matches)
+        return self.success_response(AssignmentListSerializer(results, many=True).data,"Assignments matched")
+
+
+
+
+
+
+
+
+
+
