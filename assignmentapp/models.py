@@ -66,3 +66,14 @@ class AssignmentQuestion(models.Model):
     class Meta:
         db_table = "assignment_questions"
         ordering = ["question_order"]
+
+
+class AssignmentMailLog(models.Model):
+    log_id = models.BigAutoField(primary_key=True)
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="mail_logs")
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="assignment_mails")
+    parent_email = models.EmailField(max_length=150)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "assignment_mail_log"
