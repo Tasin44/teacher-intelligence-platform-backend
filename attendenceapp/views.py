@@ -63,12 +63,38 @@ class AttendanceView(StandardResponseMixin, APIView):
 
 
 class StudentMonthlyAttendanceView(StandardResponseMixin, APIView):
-
+    """GET /api/attendance/student/{student_id}/monthly?year=2026&month=6"""
     permission_classes = [IsAuthenticated]
     throttle_scope = "read"
 
 
+    def get(self, request, student_id):
+        from studentapp.models import Student
+        try:
+            student = Student.objects.get(pk=student_id, teacher=request.user)
+        except Student.DoesNotExist:
+            return self.error_response("Student not found", status.HTTP_404_NOT_FOUND)
 
+        today = date.today()
+        year = int(request.query_params.get("year", today.year))
+        month = int(request.query_params.get("month", today.month))
+        if not (1 <= month <= 12):
+            return self.error_response("month must be between 1 and 12", status.HTTP_400_BAD_REQUEST)
+
+        start = date(year, month, 1)
+        end = date(year, month, monthrange(year, month)[1])
+        records = Attendance.objects.filter(student=student, attendance_date__range=(start, end))
+        total = records.count()
+        present_or_late = records.filter(status__in=["present", "late"]).count()
+        rate = round((present_or_late / total) * 100, 2) if total else None
+
+        return self.success_response({
+            "student_id": student.student_id,
+            "year": year,
+            "month": month,
+            "attendance_rate": rate,
+            "days": [{"date": r.attendance_date, "status": r.status} for r in records.order_by("attendance_date")],
+        }, "Monthly attendance fetched")
 
 
 
