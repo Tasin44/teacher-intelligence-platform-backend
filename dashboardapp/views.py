@@ -41,7 +41,23 @@ class DashboardSummaryView(StandardResponseMixin, APIView):
         return self.success_response(data, "Dashboard summary fetched")
 
 
+class SubjectPerformanceView(StandardResponseMixin, APIView):
+    """GET /api/dashboard/subject-performance -> bar-graph data: avg score per subject"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
 
+    def get(self, request):
+        cache_key = scoped_cache_key(request.user.id, "subject_performance")
+        data = cache.get(cache_key)
+        if data is None:
+            rows = (AssignmentFeedback.objects
+                    .filter(student__teacher=request.user)
+                    .values("subject")
+                    .annotate(avg_score=Avg("score"))
+                    .order_by("subject"))
+            data = [{"subject": r["subject"], "avg_score": round(r["avg_score"], 2)} for r in rows]
+            cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
+        return self.success_response(data, "Subject performance fetched")
 
 
 
