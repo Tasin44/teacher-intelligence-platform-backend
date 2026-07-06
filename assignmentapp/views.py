@@ -14,7 +14,7 @@ from coreapp.cache_utils import (CACHE_TTL_LISTS, bump_teacher_cache_version,bin
 from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from .models import Assignment, AssignmentQuestion, AssignmentMailLog
-
+from .serializers import AssignmentCreateSerializer, AssignmentListSerializer
 
 def _resolve_target_students(assignment: Assignment):
     """Flatten target_type into a concrete list of Student rows to notify."""
@@ -58,10 +58,16 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                 .select_related("target_student", "target_group")
                 .prefetch_related("questions"))
 
+    def get_serializer_class(self):
+        return AssignmentCreateSerializer if self.action == "create" else AssignmentListSerializer
 
 
-
-
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = AssignmentCreateSerializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            return self.error_response("Could not create assignment",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+        assignment = serializer.save()
 
 
 
