@@ -8,13 +8,15 @@ from rest_framework import filters,status,viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-
+from .ai_service import generate_assignment_questions, AIGenerationError
 
 from coreapp.cache_utils import (CACHE_TTL_LISTS, bump_teacher_cache_version,binary_search_title_prefix, scoped_cache_key)
 from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from .models import Assignment, AssignmentQuestion, AssignmentMailLog
 from .serializers import AssignmentCreateSerializer, AssignmentListSerializer
+
+
 
 def _resolve_target_students(assignment: Assignment):
     """Flatten target_type into a concrete list of Student rows to notify."""
@@ -31,8 +33,6 @@ def _resolve_target_students(assignment: Assignment):
 def _log_activity(teacher_id, activity_type, description, reference_id=None):
     from dashboardapp.models import ActivityLog
     ActivityLog.objects.create(teacher_id=teacher_id, activity_type=activity_type,description=description, reference_id=reference_id)
-
-
 
 
 
@@ -68,4 +68,25 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             return self.error_response("Could not create assignment",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         assignment = serializer.save()
 
-
+        # --- AI generation (OpenAI) ---
+        try:
+            questions = generate_assignment_questions(
+                subject=assignment.subject,
+                ccss_code=assignment.ccss_code,
+                difficulty=assignment.ai_difficulty,
+                number_of_questions=assignment.number_of_questions,
+                instructions=assignment.instructions,
+            )
+            AssignmentQuestion.objects.bulk_create([
+                AssignmentQuestion(assignment=assignment, question_text=q, question_order=i)
+                for i, q in enumerate(questions, start=1)
+            ])
+            assignment.ai_generation_status = "completed"
+        except AIGenerationError as exc:
+            assignment.ai_generation_status = "failed"
+            assignment.save(update_fields=["ai_generation_status"])
+            bump_teacher_cache_version(request.user.id)
+            # Assignment row is kept (status=failed) so the teacher can retry
+            # rather than silently losing the due-date/instructions they entered.
+            return self.error_response(f"Assignment Instructions saved but AI question generation failed: {exc}",status.HTTP_502_BAD_GATEWAY,{"assignment_id": assignment.assignment_id})
+        assignment.save(update_fields=["ai_generation_status"])
