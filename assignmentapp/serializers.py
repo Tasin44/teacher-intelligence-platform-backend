@@ -66,7 +66,10 @@ class AssignmentQuestionSerializer(serializers.ModelSerializer):
         fields = ["question_id", "question_text", "question_order"]
 
 
-
+class AssignmentListSerializer(serializers.ModelSerializer):
+    questions = AssignmentQuestionSerializer(many=True, read_only=True)
+    target_student_name = serializers.CharField(source="target_student.student_name",read_only=True, default=None)
+    target_group_name = serializers.CharField(source="target_group.group_name",read_only=True, default=None)
 
 
 
