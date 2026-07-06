@@ -47,6 +47,13 @@ class AssignmentFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return self.success_response(self.get_paginated_response(serializer.data).data,"Assessment table fetched")
 
 
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True,context={"request": request})
+        if not serializer.is_valid():
+            return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,serializer.errors)
+        row = serializer.save()
+        return self.success_response(AssignmentFeedbackSerializer(row).data, "Row updated")
 
 
 
