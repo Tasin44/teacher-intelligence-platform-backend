@@ -35,7 +35,30 @@ class AssignmentCreateSerializer(serializers.ModelSerializer):
                 {"target_group_id": "Required when target_type is individual_group"})
         return attrs
 
+    def create(self, validated_data):
+        from studentapp.models import Student
+        from groupapp.models import Group
 
+        teacher = self.context["request"].user
+        roll = validated_data.pop("target_student_roll", None)
+        group_id = validated_data.pop("target_group_id", None)
+        target_student, target_group = None, None
+
+        if roll:
+            try:
+                target_student = Student.objects.get(teacher=teacher, student_roll=roll)
+            except Student.DoesNotExist:
+                raise serializers.ValidationError({"target_student_roll": "No such student for this teacher"})
+        if group_id:
+            try:
+                target_group = Group.objects.get(teacher=teacher, pk=group_id)
+            except Group.DoesNotExist:
+                raise serializers.ValidationError({"target_group_id": "No such group for this teacher"})
+
+        return Assignment.objects.create(
+            teacher=teacher, target_student=target_student, target_group=target_group,
+            **validated_data
+        )
 
 
 
