@@ -32,3 +32,34 @@ class AssignmentFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         if subject:
             qs = qs.filter(subject=subject)
         return qs
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            return self.error_response("Could not save feedback",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+        row = serializer.save()
+        return self.success_response(AssignmentFeedbackSerializer(row).data,"Feedback recorded", status.HTTP_201_CREATED)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
