@@ -41,6 +41,10 @@ class AssignmentFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return self.success_response(AssignmentFeedbackSerializer(row).data,"Feedback recorded", status.HTTP_201_CREATED)
 
 
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(page, many=True)
+        return self.success_response(self.get_paginated_response(serializer.data).data,"Assessment table fetched")
 
 
 
@@ -61,5 +65,3 @@ class AssignmentFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
 
 
-
-        
