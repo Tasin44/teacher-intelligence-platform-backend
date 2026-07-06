@@ -23,4 +23,12 @@ class AssignmentFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return super().get_throttles()
 
 
-
+    def get_queryset(self):
+        qs = AssignmentFeedback.objects.filter(student__teacher=self.request.user).select_related("student")
+        roll = self.request.query_params.get("student_roll")
+        if roll:
+            qs = qs.filter(student__student_roll=roll)
+        subject = self.request.query_params.get("subject")
+        if subject:
+            qs = qs.filter(subject=subject)
+        return qs
