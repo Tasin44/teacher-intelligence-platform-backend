@@ -28,3 +28,6 @@ def _resolve_target_students(assignment: Assignment):
         return list(Student.objects.filter(teacher=assignment.teacher))
     return []
 
+def _log_activity(teacher_id, activity_type, description, reference_id=None):
+    from dashboardapp.models import ActivityLog
+    ActivityLog.objects.create(teacher_id=teacher_id, activity_type=activity_type,description=description, reference_id=reference_id)
