@@ -75,4 +75,29 @@ class RecentActivityView(StandardResponseMixin, APIView):
 
 
 
+class StudentBestSubjectView(StandardResponseMixin, APIView):
+    """GET /api/dashboard/best-subject -> each student's highest-average subject"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
 
+    def get(self, request):
+        cache_key = scoped_cache_key(request.user.id, "student_best_subject")
+        data = cache.get(cache_key)
+        if data is None:
+            rows = (AssignmentFeedback.objects
+                    .filter(student__teacher=request.user)
+                    .values("student_id", "student__student_name", "subject")
+                    .annotate(avg_score=Avg("score")))
+            best = {}
+            for r in rows:
+                sid = r["student_id"]
+                if sid not in best or r["avg_score"] > best[sid]["avg_score"]:
+                    best[sid] = {
+                        "student_id": sid,
+                        "student_name": r["student__student_name"],
+                        "best_subject": r["subject"],
+                        "avg_score": round(r["avg_score"], 2),
+                    }
+            data = list(best.values())
+            cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
+        return self.success_response(data, "Best subject per student fetched")
