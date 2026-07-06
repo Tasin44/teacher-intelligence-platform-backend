@@ -28,3 +28,11 @@ class OffDayView(StandardResponseMixin, APIView):
         return self.success_response(OffDaySerializer(off_day).data, "Off day created",status.HTTP_201_CREATED)
 
 
+
+class AttendanceView(StandardResponseMixin, APIView):
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "write"
+
+
+
