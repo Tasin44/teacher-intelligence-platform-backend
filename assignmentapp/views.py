@@ -37,7 +37,12 @@ def _log_activity(teacher_id, activity_type, description, reference_id=None):
 
 
 class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
-
+    """
+    POST   /api/assignments              -> create + AI-generate questions + email parents
+    GET    /api/assignments              -> list, filter by subject/tag/target_type
+    GET    /api/assignments/{id}         -> retrieve (with generated questions)
+    GET    /api/assignments/search?q=    -> O(log n) title-prefix search via cached sorted index
+    """
 
     permission_classes = [IsAuthenticated, IsOwnerTeacher]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
