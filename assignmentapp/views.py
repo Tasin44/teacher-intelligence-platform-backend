@@ -45,7 +45,18 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     ordering_fields = ["due_date", "creation_date", "title"]
 
 
+    def get_throttles(self):
+        if self.action == "create":
+            self.throttle_scope = "ai_generate"
+        else:
+            self.throttle_scope = "read" if self.request.method == "GET" else "write"
+        return super().get_throttles()
 
+    def get_queryset(self):
+        return (Assignment.objects
+                .filter(teacher=self.request.user)
+                .select_related("target_student", "target_group")
+                .prefetch_related("questions"))
 
 
 
