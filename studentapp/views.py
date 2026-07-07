@@ -1,20 +1,17 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters,status,viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from coreapp.cache_utils import bump_teacher_cache_version
 from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from .models import Student
-from .serializers import StudentCreateSerializer,StudentListSerializer
+from .serializers import StudentCreateSerializer, StudentListSerializer
 
 class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
 
-    permission_classes = [IsAuthenticated,IsOwnerTeacher]
+    permission_classes = [IsAuthenticated, IsOwnerTeacher]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["risk_status", "student_grade", "recommended_group"]
     search_fields = ["student_name", "student_roll", "parent_name"]
@@ -40,7 +37,7 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             return self.error_response("Could not create student",
                                         status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         student = serializer.save()
-        bump_teacher_cache_version(request.user.id)
+        bump_teacher_cache_version(request.user.pk)
         return self.success_response(StudentListSerializer(student).data,
                                       "Student created", status.HTTP_201_CREATED)
 
@@ -50,10 +47,10 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return self.success_response(self.get_paginated_response(serializer.data).data,
                                       "Students fetched")
 
-    def retrieve(self,request, *args,**kwargs):
+    def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        return self.success_response(StudentListSerializer(instance).data,"Student fetched")
-    
+        return self.success_response(StudentListSerializer(instance).data, "Student fetched")
+
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -62,17 +59,12 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,
                                         serializer.errors)
         student = serializer.save()
-        bump_teacher_cache_version(request.user.id)
+        bump_teacher_cache_version(request.user.pk)
         return self.success_response(StudentListSerializer(student).data, "Student updated")
 
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        bump_teacher_cache_version(request.user.id)
+        bump_teacher_cache_version(request.user.pk)
         return self.success_response(None, "Student deleted")
-
-
-
-
-

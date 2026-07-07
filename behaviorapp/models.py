@@ -9,7 +9,7 @@ class BehaviorFeedback(models.Model):
         CONCERN = "concern", "Concern"
 
     behavior_id = models.BigAutoField(primary_key=True)
-    student = models.ForeignKey("students.Student", on_delete=models.CASCADE,related_name="behavior_feedback", db_index=True)
+    student = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE,related_name="behavior_feedback", db_index=True)
     event_date = models.DateField()
     incident_classification = models.CharField(max_length=10, choices=Classification.choices)
     engagement_rating = models.PositiveSmallIntegerField()

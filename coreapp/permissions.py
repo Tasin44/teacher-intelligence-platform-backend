@@ -12,4 +12,4 @@ class IsOwnerTeacher(BasePermission):
         teacher_id = getattr(obj, "teacher_id", None)
         if teacher_id is None and hasattr(obj, "student"):
             teacher_id = obj.student.teacher_id
-        return teacher_id == request.user.id
+        return teacher_id == request.user.pk

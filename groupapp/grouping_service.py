@@ -33,10 +33,14 @@ TIERS = [
 ]
 
 
-def _composite_score(student) -> float:
+def _composite_score(student, engagement_map: dict) -> float:
+    """
+    Compute weighted composite score.
+    Uses a pre-fetched engagement_map to avoid per-student DB queries (N+1 fix).
+    """
     avg_score = float(student.avg_score) if student.avg_score is not None else 0.0
     attendance = float(student.attendance_rate) if student.attendance_rate is not None else 0.0
-    engagement_avg = student.behavior_feedback.aggregate(a=Avg("engagement_rating"))["a"] or 0.0
+    engagement_avg = engagement_map.get(student.pk, 0.0)
     engagement_pct = engagement_avg * 20  # scale 1-5 -> 0-100
     return round(
         avg_score * WEIGHT_SCORE + attendance * WEIGHT_ATTENDANCE + engagement_pct * WEIGHT_ENGAGEMENT,
@@ -56,11 +60,20 @@ def generate_groups(teacher) -> list[Group]:
     Regenerates all AI groups for a teacher. Existing AI-generated groups
     are cleared and rebuilt so re-running stays idempotent.
     """
-    students = list(Student.objects.filter(teacher=teacher).prefetch_related("behavior_feedback"))
+    students = list(Student.objects.filter(teacher=teacher))
     if not students:
         return []
 
-    scored = [(_composite_score(s), s) for s in students]
+    # ── Pre-fetch engagement averages in ONE query instead of N queries ──
+    engagement_qs = (
+        Student.objects
+        .filter(teacher=teacher)
+        .annotate(eng_avg=Avg("behavior_feedback__engagement_rating"))
+        .values_list("student_id", "eng_avg")
+    )
+    engagement_map = {sid: float(avg or 0.0) for sid, avg in engagement_qs}
+
+    scored = [(_composite_score(s, engagement_map), s) for s in students]
     scored.sort(key=lambda pair: pair[0], reverse=True)  # O(n log n) sort by composite score
 
     buckets: dict[str, list] = {}

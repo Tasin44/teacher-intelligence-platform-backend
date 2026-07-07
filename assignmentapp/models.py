@@ -22,8 +22,8 @@ class Assignment(models.Model):
     title = models.CharField(max_length=200, db_index=True)
     subject = models.CharField(max_length=100, db_index=True)
     target_type = models.CharField(max_length=25, choices=TargetType.choices)
-    target_student = models.ForeignKey("students.Student", on_delete=models.SET_NULL,null=True, blank=True, related_name="targeted_assignments")
-    target_group = models.ForeignKey("groups.Group", on_delete=models.SET_NULL,null=True, blank=True, related_name="targeted_assignments")
+    target_student = models.ForeignKey("studentapp.Student", on_delete=models.SET_NULL,null=True, blank=True, related_name="targeted_assignments")
+    target_group = models.ForeignKey("groupapp.Group", on_delete=models.SET_NULL,null=True, blank=True, related_name="targeted_assignments")
     ai_difficulty = models.CharField(max_length=10, choices=Difficulty.choices, default=Difficulty.MEDIUM)
     ccss_code = models.CharField(max_length=50, blank=True, null=True)
     creation_date = models.DateTimeField(auto_now_add=True)
@@ -71,7 +71,7 @@ class AssignmentQuestion(models.Model):
 class AssignmentMailLog(models.Model):
     log_id = models.BigAutoField(primary_key=True)
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="mail_logs")
-    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="assignment_mails")
+    student = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE, related_name="assignment_mails")
     parent_email = models.EmailField(max_length=150)
     sent_at = models.DateTimeField(auto_now_add=True)
 

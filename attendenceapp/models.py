@@ -19,7 +19,7 @@ class Attendance(models.Model):
         LATE = "late", "Late"
 
     attendance_id = models.BigAutoField(primary_key=True)
-    student = models.ForeignKey("students.Student", on_delete=models.CASCADE,related_name="attendance_records", db_index=True)
+    student = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE,related_name="attendance_records", db_index=True)
     attendance_date = models.DateField()
     status = models.CharField(max_length=10, choices=Status.choices)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -11,8 +11,8 @@ class AssignmentFeedback(models.Model):
         REVIEWED = "reviewed", "Reviewed"
 
     feedback_id = models.BigAutoField(primary_key=True)
-    student = models.ForeignKey("students.Student", on_delete=models.CASCADE,related_name="assignment_feedback", db_index=True)
-    assignment = models.ForeignKey("assignments.Assignment", on_delete=models.SET_NULL,null=True, blank=True, related_name="feedback_entries")
+    student = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE,related_name="assignment_feedback", db_index=True)
+    assignment = models.ForeignKey("assignmentapp.Assignment", on_delete=models.SET_NULL,null=True, blank=True, related_name="feedback_entries")
     subject = models.CharField(max_length=100, db_index=True)
     title = models.CharField(max_length=200)
     score = models.DecimalField(max_digits=5, decimal_places=2)  # 0-100

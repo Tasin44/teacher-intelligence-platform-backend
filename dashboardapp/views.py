@@ -1,8 +1,8 @@
-
-
+import logging
 
 from django.core.cache import cache
 from django.db.models import Avg, Count
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -11,6 +11,8 @@ from coreapp.response import StandardResponseMixin
 from studentapp.models import Student
 from feedbackapp.models import AssignmentFeedback
 from .models import ActivityLog
+
+logger = logging.getLogger("aamyproject")
 
 
 
@@ -25,10 +27,12 @@ class DashboardSummaryView(StandardResponseMixin, APIView):
     throttle_scope = "read"
 
     def get(self, request):
-        cache_key = scoped_cache_key(request.user.id, "dashboard_summary")
+        cache_key = scoped_cache_key(request.user.pk, "dashboard_summary")
         data = cache.get(cache_key)
         if data is None:
-            counts = (Student.objects.filter(teacher=request.user).values("risk_status").annotate(c=Count("student_id")))
+            counts = (Student.objects.filter(teacher=request.user)
+                      .values("risk_status")
+                      .annotate(c=Count("student_id")))
             bucket = {row["risk_status"]: row["c"] for row in counts}
             data = {
                 "total_students": sum(bucket.values()),
@@ -47,7 +51,7 @@ class SubjectPerformanceView(StandardResponseMixin, APIView):
     throttle_scope = "read"
 
     def get(self, request):
-        cache_key = scoped_cache_key(request.user.id, "subject_performance")
+        cache_key = scoped_cache_key(request.user.pk, "subject_performance")
         data = cache.get(cache_key)
         if data is None:
             rows = (AssignmentFeedback.objects
@@ -66,7 +70,17 @@ class RecentActivityView(StandardResponseMixin, APIView):
     throttle_scope = "read"
 
     def get(self, request):
-        limit = min(int(request.query_params.get("limit", 20)), 100)
+        # Safe integer parsing with fallback — prevents 500 on non-numeric input
+        try:
+            limit = min(int(request.query_params.get("limit", 20)), 100)
+        except (ValueError, TypeError):
+            return self.error_response(
+                "limit must be a positive integer",
+                status.HTTP_400_BAD_REQUEST,
+            )
+        if limit < 1:
+            limit = 20
+
         rows = (ActivityLog.objects.filter(teacher=request.user)
                 .order_by("-created_at")[:limit])
         data = [{"activity_type": r.activity_type, "description": r.description,
@@ -81,7 +95,7 @@ class StudentBestSubjectView(StandardResponseMixin, APIView):
     throttle_scope = "read"
 
     def get(self, request):
-        cache_key = scoped_cache_key(request.user.id, "student_best_subject")
+        cache_key = scoped_cache_key(request.user.pk, "student_best_subject")
         data = cache.get(cache_key)
         if data is None:
             rows = (AssignmentFeedback.objects

@@ -26,7 +26,7 @@ class Student(models.Model):
     # request. Kept in sync via signals (see feedback/attendance apps).
     avg_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     attendance_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    recommended_group = models.ForeignKey("groups.Group", on_delete=models.SET_NULL,
+    recommended_group = models.ForeignKey("groupapp.Group", on_delete=models.SET_NULL,
                                            null=True, blank=True, related_name="recommended_students")
 
     created_at = models.DateTimeField(auto_now_add=True)

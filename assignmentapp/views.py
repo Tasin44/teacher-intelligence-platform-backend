@@ -1,16 +1,14 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django.core.cache import cache
-from django.db import transaction 
+from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters,status,viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from .ai_service import generate_assignment_questions, AIGenerationError
 
-from coreapp.cache_utils import (CACHE_TTL_LISTS, bump_teacher_cache_version,binary_search_title_prefix, scoped_cache_key)
+from coreapp.cache_utils import (CACHE_TTL_LISTS, bump_teacher_cache_version,
+                                  binary_search_title_prefix, scoped_cache_key)
 from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from .models import Assignment, AssignmentQuestion, AssignmentMailLog
@@ -32,7 +30,8 @@ def _resolve_target_students(assignment: Assignment):
 
 def _log_activity(teacher_id, activity_type, description, reference_id=None):
     from dashboardapp.models import ActivityLog
-    ActivityLog.objects.create(teacher_id=teacher_id, activity_type=activity_type,description=description, reference_id=reference_id)
+    ActivityLog.objects.create(teacher_id=teacher_id, activity_type=activity_type,
+                               description=description, reference_id=reference_id)
 
 
 
@@ -70,7 +69,8 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = AssignmentCreateSerializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
-            return self.error_response("Could not create assignment",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+            return self.error_response("Could not create assignment",
+                                        status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         assignment = serializer.save()
 
         # --- AI generation (OpenAI) ---
@@ -81,6 +81,7 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                 difficulty=assignment.ai_difficulty,
                 number_of_questions=assignment.number_of_questions,
                 instructions=assignment.instructions,
+                grade_level=getattr(request.user, "grade", ""),
             )
             AssignmentQuestion.objects.bulk_create([
                 AssignmentQuestion(assignment=assignment, question_text=q, question_order=i)
@@ -90,10 +91,14 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         except AIGenerationError as exc:
             assignment.ai_generation_status = "failed"
             assignment.save(update_fields=["ai_generation_status"])
-            bump_teacher_cache_version(request.user.id)
+            bump_teacher_cache_version(request.user.pk)
             # Assignment row is kept (status=failed) so the teacher can retry
             # rather than silently losing the due-date/instructions they entered.
-            return self.error_response(f"Assignment Instructions saved but AI question generation failed: {exc}",status.HTTP_502_BAD_GATEWAY,{"assignment_id": assignment.assignment_id})
+            return self.error_response(
+                f"Assignment Instructions saved but AI question generation failed: {exc}",
+                status.HTTP_502_BAD_GATEWAY,
+                {"assignment_id": assignment.assignment_id},
+            )
         assignment.save(update_fields=["ai_generation_status"])
         # --- email parents of every targeted student ---
         targets = _resolve_target_students(assignment)
@@ -103,16 +108,20 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                 AssignmentMailLog.objects.create(
                     assignment=assignment, student=student, parent_email=student.parent_email)
 
-        _log_activity(request.user.id, "assignment_created",f"Assignment '{assignment.title}' created and sent to {len(targets)} parent(s)",assignment.assignment_id)
-        bump_teacher_cache_version(request.user.id)
+        _log_activity(request.user.pk, "assignment_created",
+                      f"Assignment '{assignment.title}' created and sent to {len(targets)} parent(s)",
+                      assignment.assignment_id)
+        bump_teacher_cache_version(request.user.pk)
 
         assignment.refresh_from_db()
-        return self.success_response(AssignmentListSerializer(assignment).data,"Assignment generated and sent", status.HTTP_201_CREATED)
+        return self.success_response(AssignmentListSerializer(assignment).data,
+                                      "Assignment generated and sent", status.HTTP_201_CREATED)
 
     def list(self, request, *args, **kwargs):
         page = self.paginate_queryset(self.filter_queryset(self.get_queryset()))
         serializer = AssignmentListSerializer(page, many=True)
-        return self.success_response(self.get_paginated_response(serializer.data).data,"Assignments fetched")
+        return self.success_response(self.get_paginated_response(serializer.data).data,
+                                      "Assignments fetched")
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -130,7 +139,7 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         if not q:
             return self.error_response("q query param is required", status.HTTP_400_BAD_REQUEST)
 
-        cache_key = scoped_cache_key(request.user.id, "assignment_titles_sorted")
+        cache_key = scoped_cache_key(request.user.pk, "assignment_titles_sorted")
         sorted_titles = cache.get(cache_key)
         if sorted_titles is None:
             sorted_titles = list(
@@ -149,15 +158,9 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             matches.append(sorted_titles[i])
             i += 1
 
-        results = Assignment.objects.filter(teacher=request.user, title__in=matches)
-        return self.success_response(AssignmentListSerializer(results, many=True).data,"Assignments matched")
-
-
-
-
-
-
-
-
-
-
+        results = (Assignment.objects
+                   .filter(teacher=request.user, title__in=matches)
+                   .select_related("target_student", "target_group")
+                   .prefetch_related("questions"))
+        return self.success_response(AssignmentListSerializer(results, many=True).data,
+                                      "Assignments matched")

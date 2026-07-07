@@ -1,9 +1,4 @@
-from django.shortcuts import render
-
-# Create your views here.
-
-
-from rest_framework import status,viewsets
+from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from coreapp.permissions import IsOwnerTeacher
@@ -38,24 +33,29 @@ class BehaviorFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
-            return self.error_response("Could not save behavior feedback",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+            return self.error_response("Could not save behavior feedback",
+                                        status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         row = serializer.save()
-        return self.success_response(BehaviorFeedbackSerializer(row).data,"Behavior feedback recorded", status.HTTP_201_CREATED)
+        return self.success_response(BehaviorFeedbackSerializer(row).data,
+                                      "Behavior feedback recorded", status.HTTP_201_CREATED)
 
     def list(self, request, *args, **kwargs):
         page = self.paginate_queryset(self.get_queryset())
         serializer = self.get_serializer(page, many=True)
-        return self.success_response(self.get_paginated_response(serializer.data).data,"Behavior feedback fetched")
+        return self.success_response(self.get_paginated_response(serializer.data).data,
+                                      "Behavior feedback fetched")
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True,context={"request": request})
+        serializer = self.get_serializer(instance, data=request.data, partial=True,
+                                          context={"request": request})
         if not serializer.is_valid():
-            return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,serializer.errors)
+            return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                        serializer.errors)
         row = serializer.save()
         return self.success_response(BehaviorFeedbackSerializer(row).data, "Row updated")
 
     def destroy(self, request, *args, **kwargs):
-        instance=self.get_object()
+        instance = self.get_object()
         instance.delete()
         return self.success_response(None, "Row deleted")

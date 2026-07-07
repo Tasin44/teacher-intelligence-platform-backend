@@ -1,6 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
 from calendar import monthrange
 from datetime import date
 
@@ -22,16 +19,18 @@ class OffDayView(StandardResponseMixin, APIView):
     def post(self, request):
         serializer = OffDaySerializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
-            return self.error_response("Could not create off day",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+            return self.error_response("Could not create off day",
+                                        status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         off_day = serializer.save()
-        bump_teacher_cache_version(request.user.id)
-        return self.success_response(OffDaySerializer(off_day).data, "Off day created",status.HTTP_201_CREATED)
+        bump_teacher_cache_version(request.user.pk)
+        return self.success_response(OffDaySerializer(off_day).data, "Off day created",
+                                      status.HTTP_201_CREATED)
 
 
 
 class AttendanceView(StandardResponseMixin, APIView):
     """
-    POST /api/attendance   -> mark present/absent/late for a student+date (idempotent upsert)
+    POST /api/attendance/mark   -> mark present/absent/late for a student+date (idempotent upsert)
     Response includes that student's attendance rate for the month of attendance_date.
     """
     permission_classes = [IsAuthenticated]
@@ -40,14 +39,16 @@ class AttendanceView(StandardResponseMixin, APIView):
     def post(self, request):
         serializer = AttendanceSerializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
-            return self.error_response("Could not mark attendance",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+            return self.error_response("Could not mark attendance",
+                                        status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         record = serializer.save()
-        bump_teacher_cache_version(request.user.id)
+        bump_teacher_cache_version(request.user.pk)
 
         d = record.attendance_date
         start = d.replace(day=1)
         end = d.replace(day=monthrange(d.year, d.month)[1])
-        month_qs = Attendance.objects.filter(student=record.student,attendance_date__range=(start, end))
+        month_qs = Attendance.objects.filter(student=record.student,
+                                             attendance_date__range=(start, end))
         total = month_qs.count()
         present_or_late = month_qs.filter(status__in=["present", "late"]).count()
         monthly_rate = round((present_or_late / total) * 100, 2) if total else None
@@ -76,8 +77,15 @@ class StudentMonthlyAttendanceView(StandardResponseMixin, APIView):
             return self.error_response("Student not found", status.HTTP_404_NOT_FOUND)
 
         today = date.today()
-        year = int(request.query_params.get("year", today.year))
-        month = int(request.query_params.get("month", today.month))
+        # Safe integer parsing with fallback — prevents 500 on non-numeric input
+        try:
+            year = int(request.query_params.get("year", today.year))
+            month = int(request.query_params.get("month", today.month))
+        except (ValueError, TypeError):
+            return self.error_response(
+                "year and month must be valid integers",
+                status.HTTP_400_BAD_REQUEST,
+            )
         if not (1 <= month <= 12):
             return self.error_response("month must be between 1 and 12", status.HTTP_400_BAD_REQUEST)
 
@@ -93,14 +101,6 @@ class StudentMonthlyAttendanceView(StandardResponseMixin, APIView):
             "year": year,
             "month": month,
             "attendance_rate": rate,
-            "days": [{"date": r.attendance_date, "status": r.status} for r in records.order_by("attendance_date")],
+            "days": [{"date": r.attendance_date, "status": r.status}
+                     for r in records.order_by("attendance_date")],
         }, "Monthly attendance fetched")
-
-
-
-
-
-
-
-
-

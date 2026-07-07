@@ -37,7 +37,7 @@ class Group(models.Model):
 
 class GroupStudent(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="memberships")
-    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="group_memberships")
+    student = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE, related_name="group_memberships")
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -1,14 +1,11 @@
-from django.shortcuts import render
-
-# Create your views here.
-
+from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Avg, Count, Max
+from django.db.models import Max
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from coreapp.cache_utils import bump_teacher_cache_version
+from coreapp.cache_utils import bump_teacher_cache_version, scoped_cache_key, CACHE_TTL_DASHBOARD
 from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from dashboardapp.models import ActivityLog
@@ -31,9 +28,9 @@ class GenerateGroupsView(StandardResponseMixin, APIView):
         ActivityLog.objects.create(
             teacher=request.user, activity_type="group_generated",
             description=f"AI generated {len(groups)} group(s) from current performance data")
-        bump_teacher_cache_version(request.user.id)
+        bump_teacher_cache_version(request.user.pk)
         return self.success_response(GroupSerializer(groups, many=True).data,
-                                      "Groups generated", status.HTTP_201_CREATED) 
+                                      "Groups generated", status.HTTP_201_CREATED)
 
 
 
@@ -63,7 +60,7 @@ class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         page = self.paginate_queryset(self.get_queryset())
         serializer = GroupSerializer(page, many=True)
-        return self.success_response(self.get_paginated_response(serializer.data).data,"Groups fetched")
+        return self.success_response(self.get_paginated_response(serializer.data).data, "Groups fetched")
 
 
     def retrieve(self, request, *args, **kwargs):
@@ -77,7 +74,7 @@ class GroupViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,
                                         serializer.errors)
         group = serializer.save()
-        bump_teacher_cache_version(request.user.id)
+        bump_teacher_cache_version(request.user.pk)
         return self.success_response(GroupSerializer(group).data, "Group updated")
 
 
@@ -88,17 +85,22 @@ class GroupStatsView(StandardResponseMixin, APIView):
     throttle_scope = "read"
 
     def get(self, request):
-        groups = Group.objects.filter(teacher=request.user)
-        last_formed = groups.aggregate(last_formed=Max("generated_at"))["last_formed"]
-        total_groups = groups.count()
-        total_students = sum(groups.values_list("total_students", flat=True))
-        avg_size = round(total_students / total_groups, 2) if total_groups else 0
-        return self.success_response({
-            "total_students": total_students,
-            "total_groups": total_groups,
-            "avg_group_size": avg_size,
-            "last_group_formed": last_formed,
-        }, "Group stats fetched")
+        cache_key = scoped_cache_key(request.user.pk, "group_stats")
+        data = cache.get(cache_key)
+        if data is None:
+            groups = Group.objects.filter(teacher=request.user)
+            last_formed = groups.aggregate(last_formed=Max("generated_at"))["last_formed"]
+            total_groups = groups.count()
+            total_students = sum(groups.values_list("total_students", flat=True))
+            avg_size = round(total_students / total_groups, 2) if total_groups else 0
+            data = {
+                "total_students": total_students,
+                "total_groups": total_groups,
+                "avg_group_size": avg_size,
+                "last_group_formed": last_formed,
+            }
+            cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
+        return self.success_response(data, "Group stats fetched")
 
 
 class GroupGenerationHistoryView(StandardResponseMixin, APIView):
@@ -107,7 +109,11 @@ class GroupGenerationHistoryView(StandardResponseMixin, APIView):
     throttle_scope = "read"
 
     def get(self, request):
-        rows = (GroupGenerationHistory.objects.filter(teacher=request.user)
-                .select_related("group").order_by("-generated_date")[:200])
-        return self.success_response(GroupGenerationHistorySerializer(rows, many=True).data,"Generation history fetched")
-
+        cache_key = scoped_cache_key(request.user.pk, "group_gen_history")
+        data = cache.get(cache_key)
+        if data is None:
+            rows = (GroupGenerationHistory.objects.filter(teacher=request.user)
+                    .select_related("group").order_by("-generated_date")[:200])
+            data = GroupGenerationHistorySerializer(rows, many=True).data
+            cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
+        return self.success_response(data, "Generation history fetched")

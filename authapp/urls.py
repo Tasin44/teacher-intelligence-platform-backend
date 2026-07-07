@@ -1,10 +1,9 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView#❓why it is necessary
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     SignupView,
     VerifySignupOTPView,
     LoginView,
-    LogoutView,
     MeView,
     ForgotPasswordView,
     VerifyForgotPasswordOTPView,
@@ -16,9 +15,8 @@ urlpatterns = [
     path("signup",               SignupView.as_view(),              name="teacher-signup"),
     path("signup/verify",        VerifySignupOTPView.as_view(),     name="teacher-signup-verify"),
 
-    # ── login / logout ───────────────────────────────────────────
+    # ── login ─────────────────────────────────────────────────────
     path("login",                LoginView.as_view(),               name="teacher-login"),
-    path("logout",               LogoutView.as_view(),              name="teacher-logout"),
 
     # ── token refresh ────────────────────────────────────────────
     path("token/refresh",        TokenRefreshView.as_view(),        name="token-refresh"),
@@ -31,16 +29,3 @@ urlpatterns = [
     path("forgot-password/verify", VerifyForgotPasswordOTPView.as_view(),  name="teacher-forgot-password-verify"),
     path("reset-password",         ResetPasswordView.as_view(),            name="teacher-reset-password"),
 ]
-
-
-
-
-
-
-
-
-
-
-
-
-

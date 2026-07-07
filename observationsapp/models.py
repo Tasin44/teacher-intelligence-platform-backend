@@ -7,7 +7,7 @@ class Observation(models.Model):
         WHOLE_CLASS = "whole_class", "Whole Class"
 
     observation_id = models.BigAutoField(primary_key=True)
-    student = models.ForeignKey("students.Student", on_delete=models.CASCADE,related_name="observations", db_index=True)
+    student = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE,related_name="observations", db_index=True)
     observation_date = models.DateField()
     setting_tag = models.CharField(max_length=15, choices=SettingTag.choices)
     notes = models.TextField(blank=True, null=True)

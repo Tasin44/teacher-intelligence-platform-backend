@@ -1,13 +1,8 @@
-from django.db.models.lookups import IntegerLessThanOrEqual
-from rest_framework import permissions
-from django.shortcuts import render
-
-# Create your views here.
-from coreapp.response import StandardResponseMixin
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework import status
+
+from coreapp.response import StandardResponseMixin
 from .serializers import (
     TeacherPublicSerializer,
     SignupSerializer,
@@ -17,7 +12,6 @@ from .serializers import (
     VerifyForgotPasswordOTPSerializer,
     ResetPasswordSerializer,
 )
-from rest_framework import status
 
 
 
