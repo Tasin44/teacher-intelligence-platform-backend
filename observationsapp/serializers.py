@@ -24,3 +24,10 @@ class ObservationSerializer(serializers.ModelSerializer):
         except Student.DoesNotExist:
             raise serializers.ValidationError("No such student for this teacher")
         return value
+
+    def create(self, validated_data):
+        validated_data.pop("student_roll")
+        return Observation.objects.create(student=self._student, **validated_data)
+
+
+        
