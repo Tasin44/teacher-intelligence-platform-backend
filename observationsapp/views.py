@@ -42,5 +42,9 @@ class ObservationViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         row = serializer.save()
         return self.success_response(ObservationSerializer(row).data,"Observation created", status.HTTP_201_CREATED)
 
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(page, many=True)
+        return self.success_response(self.get_paginated_response(serializer.data).data,"Observations fetched")
 
 
