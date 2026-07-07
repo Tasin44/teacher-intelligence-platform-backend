@@ -41,3 +41,11 @@ class BehaviorFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         page = self.paginate_queryset(self.get_queryset())
         serializer = self.get_serializer(page, many=True)
         return self.success_response(self.get_paginated_response(serializer.data).data,"Behavior feedback fetched")
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True,context={"request": request})
+        if not serializer.is_valid():
+            return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,serializer.errors)
+        row = serializer.save()
+        return self.success_response(BehaviorFeedbackSerializer(row).data, "Row updated")
