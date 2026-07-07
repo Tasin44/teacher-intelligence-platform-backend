@@ -21,7 +21,7 @@ class GroupStudentAdmin(admin.ModelAdmin):
 
 @admin.register(GroupGenerationHistory)
 class GroupGenerationHistoryAdmin(admin.ModelAdmin):
-    list_display = ("history_id", "teacher", "group", "classification", "generated_date")
+    list_display = ("id", "teacher", "group", "classification", "generated_date")
     list_filter = ("classification", "generated_date")
     search_fields = ("teacher__first_name", "teacher__last_name")
     ordering = ("-generated_date",)

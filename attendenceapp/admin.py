@@ -3,9 +3,9 @@ from .models import OffDay, Attendance
 
 @admin.register(OffDay)
 class OffDayAdmin(admin.ModelAdmin):
-    list_display = ("off_day_id", "teacher", "off_date", "reason", "created_at")
+    list_display = ("off_day_id", "teacher", "off_date", "created_at")
     list_filter = ("off_date",)
-    search_fields = ("teacher__first_name", "teacher__last_name", "teacher__email", "reason")
+    search_fields = ("teacher__first_name", "teacher__last_name", "teacher__email")
     ordering = ("-off_date",)
 
 @admin.register(Attendance)
