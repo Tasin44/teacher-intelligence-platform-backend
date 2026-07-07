@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "attendenceapp",
     "behaviorapp",
     "observationsapp",
+    "adminapp",
 ]
 
 MIDDLEWARE = [

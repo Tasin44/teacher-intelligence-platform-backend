@@ -32,7 +32,7 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
     teacher_id  = models.BigAutoField(primary_key=True)
     first_name  = models.CharField(max_length=100)
     last_name   = models.CharField(max_length=100)
-    school_name = models.CharField(max_length=150)
+    school      = models.ForeignKey("adminapp.School", on_delete=models.SET_NULL, null=True, related_name="teachers")
     grade       = models.CharField(max_length=20)
     room        = models.CharField(max_length=50, blank=True, null=True)
     email       = models.EmailField(max_length=250, unique=True)
@@ -41,6 +41,13 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
     is_staff    = models.BooleanField(default=False)
     # False until the teacher verifies the OTP sent during signup
     is_verified = models.BooleanField(default=False)
+    
+    APPROVAL_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+    approval_status = models.CharField(max_length=20, choices=APPROVAL_CHOICES, default="pending")
 
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
@@ -48,7 +55,7 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
     objects = TeacherManager()
 
     USERNAME_FIELD  = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name", "school_name", "grade"]
+    REQUIRED_FIELDS = ["first_name", "last_name", "grade"]
 
     class Meta:
         db_table = "teachers"

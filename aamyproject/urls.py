@@ -10,6 +10,9 @@ from django.urls import path, include
 urlpatterns = [
     path("admin/", admin.site.urls),
 
+    # ── Admin ─────────────────────────────────────────────
+    path("api/admin/", include("adminapp.urls")),
+
     # ── Auth ──────────────────────────────────────────────
     path("api/auth/", include("authapp.urls")),
 

@@ -90,7 +90,7 @@ class TeacherPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Teacher
         fields = ["teacher_id", "first_name", "last_name",
-                  "school_name", "grade", "room", "email", "is_verified"]
+                  "school", "grade", "room", "email", "is_verified", "approval_status"]
 
 
 
@@ -102,7 +102,7 @@ class TeacherPublicSerializer(serializers.ModelSerializer):
 class SignupSerializer(serializers.Serializer):
     first_name  = serializers.CharField(max_length=100)
     last_name   = serializers.CharField(max_length=100)
-    school_name = serializers.CharField(max_length=150)
+    school_id   = serializers.PrimaryKeyRelatedField(queryset=__import__('adminapp').models.School.objects.all(), source="school")
     grade       = serializers.CharField(max_length=20)
     room        = serializers.CharField(max_length=50, required=False, allow_blank=True)
     email       = serializers.EmailField(max_length=250)
@@ -142,7 +142,7 @@ class SignupSerializer(serializers.Serializer):
         # Cache pending signup data keyed by hashed otp_code (TTL = 10 min)
         # so the verify step can reconstruct the teacher row without
         # asking the client to re-send sensitive fields.
-        cache.set(f"signup_{_hash_otp(otp_code)}", data, timeout=600)
+        cache.set(f"signup_{_hash_otp(otp_code)}", {**data, "school_id": data["school"].pk}, timeout=600)
 
         return otp_code, identifier
 
@@ -194,7 +194,7 @@ class VerifySignupOTPSerializer(serializers.Serializer):
             password    = pending["password"],
             first_name  = pending["first_name"],
             last_name   = pending["last_name"],
-            school_name = pending["school_name"],
+            school_id   = pending["school_id"],
             grade       = pending["grade"],
             room        = pending.get("room") or None,
             is_verified = True,
@@ -229,6 +229,10 @@ class LoginSerializer(serializers.Serializer):
         if not teacher.is_verified:
             raise serializers.ValidationError(
                 {"non_field_errors": "Account not verified. Please complete OTP verification."})
+
+        if teacher.approval_status != "approved":
+            raise serializers.ValidationError(
+                {"non_field_errors": "Account is pending admin approval."})
 
         if not teacher.is_active:
             raise serializers.ValidationError(

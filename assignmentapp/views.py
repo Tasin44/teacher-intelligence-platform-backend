@@ -13,6 +13,7 @@ from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from .models import Assignment, AssignmentQuestion, AssignmentMailLog
 from .serializers import AssignmentCreateSerializer, AssignmentListSerializer
+from adminapp.models import AIUsageLog
 
 
 
@@ -88,6 +89,14 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                 for i, q in enumerate(questions, start=1)
             ])
             assignment.ai_generation_status = "completed"
+            
+            # Log usage for admin platform
+            if getattr(request.user, "school", None):
+                AIUsageLog.objects.create(
+                    teacher=request.user,
+                    school=request.user.school,
+                    endpoint="assignment_generation"
+                )
         except AIGenerationError as exc:
             assignment.ai_generation_status = "failed"
             assignment.save(update_fields=["ai_generation_status"])
