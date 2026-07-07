@@ -15,7 +15,12 @@ from .serializers import BehaviorFeedbackSerializer
 
 class BehaviorFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
-
+    """
+    POST   /api/behavior-feedback                  -> create
+    GET    /api/behavior-feedback?student_roll=R1   -> list for one student
+    PATCH  /api/behavior-feedback/{id}
+    DELETE /api/behavior-feedback/{id}
+    """
     permission_classes = [IsAuthenticated, IsOwnerTeacher]
     serializer_class = BehaviorFeedbackSerializer
 
