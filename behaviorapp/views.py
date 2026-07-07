@@ -36,3 +36,8 @@ class BehaviorFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             return self.error_response("Could not save behavior feedback",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         row = serializer.save()
         return self.success_response(BehaviorFeedbackSerializer(row).data,"Behavior feedback recorded", status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(page, many=True)
+        return self.success_response(self.get_paginated_response(serializer.data).data,"Behavior feedback fetched")
