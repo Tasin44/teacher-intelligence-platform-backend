@@ -23,5 +23,10 @@ class BehaviorFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         self.throttle_scope = "read" if self.request.method == "GET" else "write"
         return super().get_throttles()
 
-
+    def get_queryset(self):
+        qs = BehaviorFeedback.objects.filter(student__teacher=self.request.user).select_related("student")
+        roll = self.request.query_params.get("student_roll")
+        if roll:
+            qs = qs.filter(student__student_roll=roll)
+        return qs
 
