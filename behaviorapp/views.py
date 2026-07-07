@@ -30,3 +30,9 @@ class BehaviorFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             qs = qs.filter(student__student_roll=roll)
         return qs
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            return self.error_response("Could not save behavior feedback",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+        row = serializer.save()
+        return self.success_response(BehaviorFeedbackSerializer(row).data,"Behavior feedback recorded", status.HTTP_201_CREATED)
