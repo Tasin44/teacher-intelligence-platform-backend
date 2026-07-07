@@ -49,3 +49,8 @@ class BehaviorFeedbackViewSet(StandardResponseMixin, viewsets.ModelViewSet):
             return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY,serializer.errors)
         row = serializer.save()
         return self.success_response(BehaviorFeedbackSerializer(row).data, "Row updated")
+
+    def destroy(self, request, *args, **kwargs):
+        instance=self.get_object()
+        instance.delete()
+        return self.success_response(None, "Row deleted")
