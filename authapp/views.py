@@ -32,6 +32,7 @@ class SignupView(StandardResponseMixin, APIView):
     sends a 6-digit OTP to the given email.
     Teacher row is NOT created yet.
     """
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_scope     = "auth"
 
@@ -60,6 +61,7 @@ class VerifySignupOTPView(StandardResponseMixin, APIView):
     """
     Verifies OTP → creates Teacher row → returns JWT tokens.
     """
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_scope     = "auth"
 
@@ -87,6 +89,7 @@ class VerifySignupOTPView(StandardResponseMixin, APIView):
 # POST /api/auth/login
 # ─────────────────────────────────────────────
 class LoginView(StandardResponseMixin, APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_scope     = "auth"
 
@@ -129,6 +132,7 @@ class ForgotPasswordView(StandardResponseMixin, APIView):
     Always returns 200 to avoid revealing whether the email is registered
     (prevents account enumeration attacks).
     """
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_scope     = "auth"
 
@@ -161,6 +165,7 @@ class ForgotPasswordView(StandardResponseMixin, APIView):
 # POST /api/auth/forgot-password/verify
 # ─────────────────────────────────────────────
 class VerifyForgotPasswordOTPView(StandardResponseMixin, APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_scope     = "auth"
 
@@ -185,6 +190,7 @@ class VerifyForgotPasswordOTPView(StandardResponseMixin, APIView):
 # POST /api/auth/reset-password
 # ─────────────────────────────────────────────
 class ResetPasswordView(StandardResponseMixin, APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_scope     = "auth"
 
