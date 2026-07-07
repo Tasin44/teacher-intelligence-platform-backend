@@ -15,3 +15,12 @@ class ObservationSerializer(serializers.ModelSerializer):
         if value > date.today():
             raise serializers.ValidationError("observation_date cannot be in the future")
         return value
+
+    def validate_student_roll(self, value):
+        from studentapp.models import Student
+        teacher = self.context["request"].user
+        try:
+            self._student = Student.objects.get(teacher=teacher, student_roll=value)
+        except Student.DoesNotExist:
+            raise serializers.ValidationError("No such student for this teacher")
+        return value
