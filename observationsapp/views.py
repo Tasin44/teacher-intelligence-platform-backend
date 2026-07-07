@@ -35,7 +35,12 @@ class ObservationViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
 
 
-
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={"request": request})
+        if not serializer.is_valid():
+            return self.error_response("Could not create observation",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+        row = serializer.save()
+        return self.success_response(ObservationSerializer(row).data,"Observation created", status.HTTP_201_CREATED)
 
 
 
