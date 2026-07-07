@@ -23,7 +23,15 @@ class ObservationViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         return super().get_throttles()
 
 
-
+    def get_queryset(self):
+        qs = Observation.objects.filter(student__teacher=self.request.user).select_related("student")
+        roll = self.request.query_params.get("student_roll")
+        if roll:
+            qs = qs.filter(student__student_roll=roll)
+        obs_date = self.request.query_params.get("date")
+        if obs_date:
+            qs = qs.filter(observation_date=obs_date)
+        return qs
 
 
 
