@@ -35,6 +35,7 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
     school      = models.ForeignKey("adminapp.School", on_delete=models.SET_NULL, null=True, related_name="teachers")
     grade       = models.CharField(max_length=20)
     room        = models.CharField(max_length=50, blank=True, null=True)
+    profile_picture = models.ImageField(upload_to="teachers/profiles/", blank=True, null=True)
     email       = models.EmailField(max_length=250, unique=True)
 
     is_active   = models.BooleanField(default=True)

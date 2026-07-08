@@ -26,8 +26,11 @@ def _generate_otp(length: int = 6) -> str:
 
 
 def _hash_otp(otp_code: str) -> str:
-    """SHA-256 hash of OTP — stored in DB instead of plaintext."""
-    return hashlib.sha256(otp_code.encode()).hexdigest()
+    #will do this before deployment
+    # """SHA-256 hash of OTP — stored in DB instead of plaintext."""
+    # return hashlib.sha256(otp_code.encode()).hexdigest()
+    """Return OTP directly so it can be seen in Django Admin (per user request)."""
+    return otp_code
 
 
 def _otp_expiry(minutes: int = 10):
@@ -90,7 +93,12 @@ class TeacherPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Teacher
         fields = ["teacher_id", "first_name", "last_name",
-                  "school", "grade", "room", "email", "is_verified", "approval_status"]
+                  "school", "grade", "room", "email", "profile_picture", "is_verified", "approval_status"]
+
+class TeacherProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = ["first_name", "last_name", "grade", "room", "profile_picture"]
 
 
 

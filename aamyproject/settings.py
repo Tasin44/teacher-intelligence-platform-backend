@@ -152,6 +152,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ─────────────────────────────────────────────
 # CORS
 # ─────────────────────────────────────────────
+CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False").lower() in ("true", "1", "yes")
+
 CORS_ALLOWED_ORIGINS = [
     o.strip()
     for o in os.environ.get(

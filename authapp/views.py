@@ -5,6 +5,7 @@ from rest_framework import status
 from coreapp.response import StandardResponseMixin
 from .serializers import (
     TeacherPublicSerializer,
+    TeacherProfileUpdateSerializer,
     SignupSerializer,
     VerifySignupOTPSerializer,
     LoginSerializer,
@@ -116,11 +117,32 @@ class LoginView(StandardResponseMixin, APIView):
 class MeView(StandardResponseMixin, APIView):
     permission_classes = [IsAuthenticated]
     throttle_scope     = "read"
+    from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get(self, request):
         return self.success_response(
             data    = TeacherPublicSerializer(request.user).data,
             message = "Profile fetched successfully.",
+        )
+
+    def patch(self, request):
+        serializer = TeacherProfileUpdateSerializer(
+            instance=request.user, 
+            data=request.data, 
+            partial=True
+        )
+        if not serializer.is_valid():
+            return self.error_response(
+                "Profile update failed",
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                serializer.errors,
+            )
+        teacher = serializer.save()
+        
+        return self.success_response(
+            data    = TeacherPublicSerializer(teacher).data,
+            message = "Profile updated successfully.",
         )
 
 # ─────────────────────────────────────────────

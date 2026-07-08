@@ -10,7 +10,7 @@ class TeacherAdmin(admin.ModelAdmin):
     
 @admin.register(OTPVerification)
 class OTPVerificationAdmin(admin.ModelAdmin):
-    list_display = ("id", "identifier", "purpose", "is_verified", "expires_at", "created_at")
+    list_display = ("id", "identifier", "otp_code", "purpose", "is_verified", "expires_at", "created_at")
     list_filter = ("purpose", "is_verified")
     search_fields = ("identifier",)
     ordering = ("-created_at",)
