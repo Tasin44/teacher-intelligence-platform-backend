@@ -152,21 +152,24 @@ class SignupSerializer(serializers.Serializer):
 # SIGNUP — step 2  (OTP verify → create teacher)
 # ─────────────────────────────────────────────
 class VerifySignupOTPSerializer(serializers.Serializer):
+    email    = serializers.EmailField()
     otp_code = serializers.CharField(max_length=6, min_length=6)
 
     def validate(self, attrs):
+        email    = attrs["email"].strip().lower()
         otp_code = attrs["otp_code"]
         hashed   = _hash_otp(otp_code)
 
         try:
             otp = OTPVerification.objects.filter(
+                identifier=email,
                 otp_code=hashed,
                 purpose=OTPVerification.Purpose.SIGNUP,
                 is_verified=False,
             ).latest("created_at")
         except OTPVerification.DoesNotExist:
-            _record_otp_failure("signup_global")
-            raise serializers.ValidationError({"otp_code": "Invalid OTP."})
+            _record_otp_failure(email)
+            raise serializers.ValidationError({"otp_code": "Invalid OTP for this email."})
 
         _check_otp_rate_limit(otp.identifier)
 
