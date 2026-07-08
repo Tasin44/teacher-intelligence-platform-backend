@@ -114,7 +114,7 @@ class AdminTeacherViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         if not serializer.is_valid():
             return self.error_response("Could not create teacher", status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         teacher = serializer.save()
-        return self.success_response(AdminTeacherSerializer(teacher).data, "Teacher created successfully.", status.HTTP_201_CREATED)
+        return self.success_response(AdminTeacherSerializer(teacher, context={"request": request}).data, "Teacher created successfully.", status.HTTP_201_CREATED)
         
     def list(self, request, *args, **kwargs):
         page = self.paginate_queryset(self.get_queryset())
@@ -162,7 +162,7 @@ class AdminTeacherApproveView(StandardResponseMixin, APIView):
         teacher.save(update_fields=["approval_status", "is_active", "updated_at"])
         
         return self.success_response(
-            AdminTeacherSerializer(teacher).data, 
+            AdminTeacherSerializer(teacher, context={"request": request}).data, 
             "Teacher approved successfully."
         )
 
@@ -234,6 +234,16 @@ class AdminSchoolViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         if self.action == 'create':
             return SchoolSerializer
         return SchoolStatsSerializer
+        
+    def retrieve(self, request, *args, **kwargs):
+        school = self.get_object()
+        # Clean nulls from subquery
+        school.total_teachers = school.total_teachers or 0
+        school.total_students = school.total_students or 0
+        school.total_ai_requests = school.total_ai_requests or 0
+        
+        serializer = self.get_serializer(school)
+        return self.success_response(serializer.data, "School fetched.")
         
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()

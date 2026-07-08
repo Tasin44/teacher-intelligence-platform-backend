@@ -78,7 +78,7 @@ class VerifySignupOTPView(StandardResponseMixin, APIView):
 
         return self.success_response(
             data = {
-                "teacher": TeacherPublicSerializer(teacher).data,
+                "teacher": TeacherPublicSerializer(teacher, context={"request": request}).data,
                 "tokens":  tokens,
             },
             message     = "Account created successfully.",
@@ -105,7 +105,7 @@ class LoginView(StandardResponseMixin, APIView):
         teacher, tokens = serializer.save()
 
         return self.success_response(
-            data    = {"teacher": TeacherPublicSerializer(teacher).data, "tokens": tokens},
+            data    = {"teacher": TeacherPublicSerializer(teacher, context={"request": request}).data, "tokens": tokens},
             message = "Login successful.",
         )
 
@@ -122,7 +122,7 @@ class MeView(StandardResponseMixin, APIView):
 
     def get(self, request):
         return self.success_response(
-            data    = TeacherPublicSerializer(request.user).data,
+            data    = TeacherPublicSerializer(request.user, context={"request": request}).data,
             message = "Profile fetched successfully.",
         )
 
@@ -141,7 +141,7 @@ class MeView(StandardResponseMixin, APIView):
         teacher = serializer.save()
         
         return self.success_response(
-            data    = TeacherPublicSerializer(teacher).data,
+            data    = TeacherPublicSerializer(teacher, context={"request": request}).data,
             message = "Profile updated successfully.",
         )
 

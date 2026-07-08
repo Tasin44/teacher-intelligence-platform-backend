@@ -17,6 +17,7 @@ urlpatterns = [
     path("teachers/<int:pk>/approve", AdminTeacherApproveView.as_view(), name="admin-teacher-approve"),
     
     path("schools", AdminSchoolViewSet.as_view({'get': 'list', 'post': 'create'}), name="admin-schools"),
+    path("schools/<int:pk>/", AdminSchoolViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name="admin-school-detail"),
     
     path("analysis-report", AdminAnalysisReportView.as_view(), name="admin-analysis-report"),
     path("ai-config", AdminAIConfigView.as_view(), name="admin-ai-config"),

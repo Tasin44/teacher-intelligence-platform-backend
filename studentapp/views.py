@@ -40,7 +40,7 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                                         status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
         student = serializer.save()
         bump_teacher_cache_version(request.user.pk)
-        return self.success_response(StudentListSerializer(student).data,
+        return self.success_response(StudentListSerializer(student, context={"request": request}).data,
                                       "Student created", status.HTTP_201_CREATED)
 
     def list(self, request, *args, **kwargs):
@@ -51,7 +51,7 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        return self.success_response(StudentListSerializer(instance).data, "Student fetched")
+        return self.success_response(StudentListSerializer(instance, context={"request": request}).data, "Student fetched")
 
 
     def partial_update(self, request, *args, **kwargs):
@@ -62,7 +62,7 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                                         serializer.errors)
         student = serializer.save()
         bump_teacher_cache_version(request.user.pk)
-        return self.success_response(StudentListSerializer(student).data, "Student updated")
+        return self.success_response(StudentListSerializer(student, context={"request": request}).data, "Student updated")
 
 
     def destroy(self, request, *args, **kwargs):
