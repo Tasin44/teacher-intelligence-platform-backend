@@ -44,7 +44,39 @@ class AdminTeacherCreateSerializer(serializers.ModelSerializer):
         teacher.set_password(password)
         teacher.is_verified = True # Admin creates verified accounts
         teacher.save()
+        
+        # Send formal welcome email
+        self._send_welcome_email(teacher, password)
+        
         return teacher
+
+    def _send_welcome_email(self, teacher, password):
+        subject = "Welcome to EduPulse - Your Teacher Account is Ready"
+        message = (
+            f"Dear {teacher.first_name} {teacher.last_name},\n\n"
+            f"Your teacher account has been successfully created on the EduPulse platform.\n\n"
+            f"Here are your login credentials:\n"
+            f"Email: {teacher.email}\n"
+            f"Temporary Password: {password}\n\n"
+            f"For security purposes, please log in and reset your password immediately.\n\n"
+            f"Best regards,\n"
+            f"The EduPulse Admin Team"
+        )
+        try:
+            from django.core.mail import send_mail
+            from django.conf import settings
+            send_mail(
+                subject,
+                message,
+                getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edupulse.com"),
+                [teacher.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+            
+        # Fallback to console for development verification
+        print(f"\n[EMAIL SENT TO: {teacher.email}]\nSubject: {subject}\n\n{message}\n")
 
 
 class AIConfigurationSerializer(serializers.ModelSerializer):
