@@ -22,11 +22,13 @@ class SchoolStatsSerializer(serializers.ModelSerializer):
 
 class AdminTeacherSerializer(serializers.ModelSerializer):
     school_name = serializers.CharField(source='school.school_name', read_only=True)
+    school_id = serializers.PrimaryKeyRelatedField(queryset=School.objects.all(), source="school", write_only=True, required=False)
     
     class Meta:
         model = Teacher
-        fields = ["teacher_id", "first_name", "last_name", "email", 
-                  "school_name", "grade", "room", "approval_status", "is_active", "created_at"]
+        fields = ["teacher_id", "first_name", "last_name", "email", "profile_picture",
+                  "school_name", "school_id", "grade", "room", "approval_status", "is_active", "created_at"]
+        read_only_fields = ["email", "teacher_id", "created_at"]
 
 
 class AdminTeacherCreateSerializer(serializers.ModelSerializer):
@@ -35,8 +37,14 @@ class AdminTeacherCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Teacher
-        fields = ["first_name", "last_name", "email", "password", 
+        fields = ["first_name", "last_name", "email", "password", "profile_picture",
                   "school_id", "grade", "room", "approval_status"]
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if Teacher.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A teacher with this email already exists.")
+        return value
 
     def create(self, validated_data):
         password = validated_data.pop("password")

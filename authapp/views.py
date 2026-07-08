@@ -16,10 +16,34 @@ from .serializers import (
 
 
 
-# ── placeholder: swap with SendGrid/SES/Twilio in production ────────────────
+from django.core.mail import send_mail
+from django.conf import settings
+
+# ── SendGrid/SES/Twilio or Django SMTP ──────────────────────────────────────
 def _send_otp(identifier: str, otp_code: str, purpose: str):
-    """Send OTP email. Replace with real email service in production."""
-    print(f"[OTP] Sending {purpose} OTP {otp_code!r} to {identifier}")
+    #    print(f"[OTP] Sending {purpose} OTP {otp_code!r} to {identifier}")
+    """Send OTP email using Django's email backend."""
+    if purpose == "signup":
+        subject = "EduPulse - Verify your email"
+        message = f"Welcome to EduPulse! Your email verification OTP is: {otp_code}\n\nThis OTP will expire in 10 minutes."
+    elif purpose == "forgot_password":
+        subject = "EduPulse - Password Reset Request"
+        message = f"We received a request to reset your password. Your OTP is: {otp_code}\n\nThis OTP will expire in 10 minutes. If you did not request this, please ignore this email."
+    else:
+        subject = "EduPulse - OTP Verification"
+        message = f"Your OTP is: {otp_code}"
+
+    try:
+        send_mail(
+            subject,
+            message,
+            getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edupulse.com"),
+            [identifier],
+            fail_silently=True,
+        )
+        print(f"[OTP] Successfully sent {purpose} OTP to {identifier}")
+    except Exception as e:
+        print(f"[OTP Error] Failed to send {purpose} OTP to {identifier}: {e}")
 
 
 

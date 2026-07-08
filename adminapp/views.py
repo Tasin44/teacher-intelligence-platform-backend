@@ -102,6 +102,8 @@ class AdminTeacherViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     POST /api/admin/teachers
     """
     permission_classes = [IsAdminUser]
+    from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     queryset = Teacher.objects.select_related('school').all().order_by('-created_at')
     
     def get_serializer_class(self):

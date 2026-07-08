@@ -12,6 +12,7 @@ urlpatterns = [
     path("platform-usage", AdminPlatformUsageView.as_view(), name="admin-platform-usage"),
     
     path("teachers", AdminTeacherViewSet.as_view({'get': 'list', 'post': 'create'}), name="admin-teachers"),
+    path("teachers/<int:pk>/", AdminTeacherViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name="admin-teacher-detail"),
     path("teachers/activity", AdminAllTeachersActivityView.as_view(), name="admin-all-teachers-activity"),
     path("teachers/<int:pk>/activity", AdminTeacherActivityView.as_view(), name="admin-teacher-activity"),
     path("teachers/<int:pk>/approve", AdminTeacherApproveView.as_view(), name="admin-teacher-approve"),
