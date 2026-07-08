@@ -16,7 +16,7 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["risk_status", "student_grade", "recommended_group"]
-    search_fields = ["student_name", "student_roll", "parent_name"]
+    search_fields = ["student_name", "student_roll", "student_grade", "parent_name"]
     ordering_fields = ["student_name", "avg_score", "attendance_rate", "created_at"]
 
     def get_throttles(self):
