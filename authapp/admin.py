@@ -7,6 +7,12 @@ class TeacherAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "is_verified", "is_staff", "approval_status", "school")
     search_fields = ("email", "first_name", "last_name")
     ordering = ("-created_at",)
+    actions = ["approve_teachers"]
+    
+    @admin.action(description="Approve selected teachers")
+    def approve_teachers(self, request, queryset):
+        updated = queryset.update(approval_status="approved", is_active=True)
+        self.message_user(request, f"Successfully approved {updated} teacher(s).")
     
 @admin.register(OTPVerification)
 class OTPVerificationAdmin(admin.ModelAdmin):
