@@ -13,7 +13,7 @@ class Student(models.Model):
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                  related_name="students", db_index=True)
     student_name = models.CharField(max_length=150)
-    student_image = models.URLField(max_length=255, blank=True, null=True)
+    student_image = models.ImageField(upload_to="students/photos/", blank=True, null=True)
     student_roll = models.CharField(max_length=50)
     student_grade = models.CharField(max_length=20)
     risk_status = models.CharField(max_length=20, choices=Risk.choices, default=Risk.ON_TRACK)

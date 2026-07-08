@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 
 from coreapp.cache_utils import bump_teacher_cache_version
@@ -12,6 +13,7 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
 
     permission_classes = [IsAuthenticated, IsOwnerTeacher]
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["risk_status", "student_grade", "recommended_group"]
     search_fields = ["student_name", "student_roll", "parent_name"]
