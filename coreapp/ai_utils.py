@@ -87,7 +87,7 @@ def call_openai_with_retry(
 
             return parsed
 
-        except (OpenAIError, json.JSONDecodeError, KeyError, IndexError) as exc:
+        except Exception as exc:
             last_exception = exc
             if attempt < max_retries:
                 backoff = initial_backoff * (2 ** (attempt - 1))

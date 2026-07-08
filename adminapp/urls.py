@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     AdminLoginView, AdminDashboardStatsView, AdminPlatformUsageView,
     AdminTeacherViewSet, AdminTeacherActivityView, AdminSchoolViewSet,
-    AdminAnalysisReportView, AdminAIConfigView, AdminAllTeachersActivityView
+    AdminAnalysisReportView, AdminAIConfigView, AdminAllTeachersActivityView,
+    AdminTeacherApproveView
 )
 
 urlpatterns = [
@@ -13,6 +14,7 @@ urlpatterns = [
     path("teachers", AdminTeacherViewSet.as_view({'get': 'list', 'post': 'create'}), name="admin-teachers"),
     path("teachers/activity", AdminAllTeachersActivityView.as_view(), name="admin-all-teachers-activity"),
     path("teachers/<int:pk>/activity", AdminTeacherActivityView.as_view(), name="admin-teacher-activity"),
+    path("teachers/<int:pk>/approve", AdminTeacherApproveView.as_view(), name="admin-teacher-approve"),
     
     path("schools", AdminSchoolViewSet.as_view({'get': 'list', 'post': 'create'}), name="admin-schools"),
     

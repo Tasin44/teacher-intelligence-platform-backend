@@ -144,6 +144,29 @@ class AdminTeacherActivityView(StandardResponseMixin, APIView):
         return self.success_response(data, "Teacher activity fetched.")
 
 
+class AdminTeacherApproveView(StandardResponseMixin, APIView):
+    """POST /api/admin/teachers/{id}/approve"""
+    permission_classes = [IsAdminUser]
+    
+    def post(self, request, pk):
+        try:
+            teacher = Teacher.objects.get(pk=pk)
+        except Teacher.DoesNotExist:
+            return self.error_response("Teacher not found.", status.HTTP_404_NOT_FOUND)
+            
+        if teacher.approval_status == "approved":
+            return self.error_response("Teacher is already approved.", status.HTTP_400_BAD_REQUEST)
+            
+        teacher.approval_status = "approved"
+        teacher.is_active = True
+        teacher.save(update_fields=["approval_status", "is_active", "updated_at"])
+        
+        return self.success_response(
+            AdminTeacherSerializer(teacher).data, 
+            "Teacher approved successfully."
+        )
+
+
 from rest_framework.generics import ListAPIView
 from rest_framework import serializers
 
