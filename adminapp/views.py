@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Count, OuterRef, Subquery, IntegerField
+from django.db.models import Count, OuterRef, Subquery, IntegerField, F
 from django.db.models.functions import TruncDate
 
 from rest_framework import status, viewsets
@@ -142,6 +142,50 @@ class AdminTeacherActivityView(StandardResponseMixin, APIView):
             "status": teacher.approval_status
         }
         return self.success_response(data, "Teacher activity fetched.")
+
+
+from rest_framework.generics import ListAPIView
+from rest_framework import serializers
+
+class TeacherActivitySerializer(serializers.ModelSerializer):
+    teacher_name = serializers.SerializerMethodField()
+    school_name = serializers.CharField(source='school.school_name', read_only=True, allow_null=True)
+    last_active = serializers.SerializerMethodField()
+    status = serializers.CharField(source='approval_status')
+
+    class Meta:
+        model = Teacher
+        fields = ['teacher_id', 'teacher_name', 'school_name', 'last_active', 'status']
+
+    def get_teacher_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+    def get_last_active(self, obj):
+        return getattr(obj, 'last_activity_date', None) or obj.updated_at
+
+class AdminAllTeachersActivityView(StandardResponseMixin, ListAPIView):
+    """GET /api/admin/teachers/activity"""
+    permission_classes = [IsAdminUser]
+    serializer_class = TeacherActivitySerializer
+    
+    def get_queryset(self):
+        latest_activity = ActivityLog.objects.filter(
+            teacher=OuterRef('pk')
+        ).order_by('-created_at').values('created_at')[:1]
+        
+        return Teacher.objects.select_related('school').annotate(
+            last_activity_date=Subquery(latest_activity)
+        ).order_by(F('last_activity_date').desc(nulls_last=True), '-updated_at')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.success_response(self.get_paginated_response(serializer.data).data, "Teacher activities fetched.")
+
+        serializer = self.get_serializer(queryset, many=True)
+        return self.success_response(serializer.data, "Teacher activities fetched.")
 
 
 class AdminSchoolViewSet(StandardResponseMixin, viewsets.ModelViewSet):
