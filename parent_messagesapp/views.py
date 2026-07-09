@@ -73,3 +73,31 @@ class SendParentMessageView(StandardResponseMixin, APIView):
         msg.save(update_fields=["status", "sent_at"])
 
         return self.success_response(AIParentMessageSerializer(msg).data,"Message sent to parent")
+
+
+
+
+class ParentMessageListView(StandardResponseMixin, APIView):
+    """
+    GET /api/parent-messages/
+    ?student_roll=  ?classification=  ?status=draft|sent
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
+
+    def get(self, request):
+        qs = (AIParentMessage.objects
+              .filter(teacher=request.user)
+              .select_related("student"))
+        if roll := request.query_params.get("student_roll"):
+            qs = qs.filter(student__student_roll=roll)
+        if clf := request.query_params.get("classification"):
+            qs = qs.filter(classification=clf)
+        if st := request.query_params.get("status"):
+            qs = qs.filter(status=st)
+
+        return self.success_response(
+            AIParentMessageSerializer(qs, many=True).data,
+            "Parent messages fetched")
+
+
