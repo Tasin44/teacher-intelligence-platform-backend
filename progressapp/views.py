@@ -49,3 +49,41 @@ class StudentOverallGrowthView(StandardResponseMixin, APIView):
                 for r in subject_breakdown
             ],
         }, "Overall growth fetched")
+
+
+class StudentMonthlyAttendanceTrendView(StandardResponseMixin, APIView):
+    """
+    GET /api/progress/student/{student_id}/attendance?months=6
+    Returns monthly attendance rate for the last N months.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
+
+    def get(self, request, student_id):
+        try:
+            Student.objects.get(pk=student_id, teacher=request.user)
+        except Student.DoesNotExist:
+            return self.error_response("Student not found", 404)
+
+        months = min(int(request.query_params.get("months", 6)), 24)
+        today  = date.today()
+        result = []
+
+        for i in range(months - 1, -1, -1):
+            # go back i months
+            month = (today.month - i - 1) % 12 + 1
+            year  = today.year - ((today.month - i - 1) // 12)
+            start = date(year, month, 1)
+            end   = date(year, month, monthrange(year, month)[1])
+
+            qs    = Attendance.objects.filter(student_id=student_id, attendance_date__range=(start, end))
+            total = qs.count()
+            present_or_late = qs.filter(status__in=["present", "late"]).count()
+            rate  = round((present_or_late / total) * 100, 2) if total else None
+
+            result.append({"year": year, "month": month, "attendance_rate": rate, "total_days": total})
+
+        return self.success_response(result, "Monthly attendance trend fetched")
+
+
+
