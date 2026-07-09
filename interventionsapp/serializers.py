@@ -54,4 +54,25 @@ class InterventionSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    def create(self, validated_data):
+        validated_data.pop("student_roll", None)
+        validated_data.pop("group_id", None)
+        student = validated_data.pop("_student", None)
+        group   = validated_data.pop("_group",   None)
+        return Intervention.objects.create(
+            teacher=self.context["request"].user,
+            student=student,
+            group=group,
+            **validated_data,
+        )
+
+    def update(self, instance, validated_data):
+        validated_data.pop("student_roll", None)
+        validated_data.pop("group_id", None)
+        validated_data.pop("_student", None)
+        validated_data.pop("_group", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
