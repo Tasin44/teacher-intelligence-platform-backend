@@ -90,6 +90,20 @@ class ApplyModificationView(StandardResponseMixin, APIView):
         return self.success_response(LessonRecommendationSerializer(rec).data,"Modification applied")
 
 
+class DismissLessonRecommendationView(StandardResponseMixin, APIView):
+    """PATCH /api/lesson-recommendations/{id}/dismiss"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "write"
+
+    def patch(self, request, rec_id):
+        try:
+            rec = LessonRecommendation.objects.get(
+                pk=rec_id, assignment__teacher=request.user)
+        except LessonRecommendation.DoesNotExist:
+            return self.error_response("Recommendation not found", status.HTTP_404_NOT_FOUND)
+        rec.status = LessonRecommendation.Status.DISMISSED
+        rec.save(update_fields=["status"])
+        return self.success_response(None, "Recommendation dismissed")
 
 
 
@@ -100,4 +114,3 @@ class ApplyModificationView(StandardResponseMixin, APIView):
 
 
 
-        
