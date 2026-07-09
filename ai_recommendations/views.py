@@ -40,3 +40,28 @@ class GenerateAIRecommendationView(StandardResponseMixin, APIView):
         return self.success_response(
             AIRecommendationSerializer(rec).data,
             "AI recommendation generated", status.HTTP_201_CREATED)
+
+class StudentAIRecommendationView(StandardResponseMixin, APIView):
+    """
+    GET /api/ai-recommendations/{student_id}
+    Returns the latest recommendation for a student (from cache if available).
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
+
+    def get(self, request, student_id):
+        try:
+            Student.objects.get(pk=student_id, teacher=request.user)
+        except Student.DoesNotExist:
+            return self.error_response("Student not found", status.HTTP_404_NOT_FOUND)
+
+        rec = (AIRecommendation.objects
+               .filter(student_id=student_id)
+               .select_related("student__recommended_group")
+               .first())
+        if not rec:
+            return self.error_response(
+                "No recommendation generated yet. POST to /generate/ first.",
+                status.HTTP_404_NOT_FOUND)
+
+        return self.success_response(AIRecommendationSerializer(rec).data,"AI recommendation fetched")
