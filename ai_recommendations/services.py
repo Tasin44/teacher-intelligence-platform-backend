@@ -54,3 +54,38 @@ Recent Observations:
 {chr(10).join(obs_lines) or '  No observations yet'}
 """.strip()
     return snapshot
+
+
+def generate_ai_recommendation(student) -> dict:
+    """
+    Returns dict with keys: current_strengths, recommended_activities, skill_gaps
+    Each value is a newline-joined string of 5 bullet points.
+    """
+    snapshot = _build_student_snapshot(student)
+    system_prompt = (
+        "You are an expert K-12 educational coach. Analyse the student data and respond "
+        "ONLY with valid JSON (no markdown) in this exact shape:\n"
+        '{"current_strengths":["...","...","...","...","..."],'
+        '"recommended_activities":["...","...","...","...","..."],'
+        '"skill_gaps":["...","...","...","...","..."]}'
+    )
+    user_prompt = f"Student performance data:\n{snapshot}"
+    try:
+        client   = OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model           = settings.OPENAI_MODEL,
+            messages        = [{"role": "system", "content": system_prompt},
+                               {"role": "user",   "content": user_prompt}],
+            response_format = {"type": "json_object"},
+            temperature     = 0.4,
+            max_tokens      = 800,
+        )
+        data = json.loads(response.choices[0].message.content)
+        return {
+            "current_strengths":      "\n".join(data.get("current_strengths",      []) [:5]),
+            "recommended_activities": "\n".join(data.get("recommended_activities", [])[:5]),
+            "skill_gaps":             "\n".join(data.get("skill_gaps",             [])[:5]),
+        }
+    except (OpenAIError, json.JSONDecodeError, KeyError) as exc:
+        logger.error("AI recommendation failed for student %s: %s", student.pk, exc)
+        raise AIRecommendationError(str(exc)) from exc
