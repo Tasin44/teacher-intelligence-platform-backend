@@ -106,7 +106,34 @@ class DismissLessonRecommendationView(StandardResponseMixin, APIView):
         return self.success_response(None, "Recommendation dismissed")
 
 
+class AssignmentStatusByTopicView(StandardResponseMixin, APIView):
+    """
+    GET /api/lesson-recommendations/assignment-status?topic=<title_keyword>
+    Returns all assignments matching a topic/title with their AI generation status
+    and whether a lesson recommendation has been applied.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
 
+    def get(self, request):
+        topic = request.query_params.get("topic", "").strip()
+        qs    = Assignment.objects.filter(teacher=request.user)
+        if topic:
+            qs = qs.filter(title__icontains=topic)
+
+        data = []
+        for a in qs.prefetch_related("lesson_recommendations")[:50]:
+            recs   = a.lesson_recommendations.all()
+            latest = recs.first()
+            data.append({
+                "assignment_id":    a.assignment_id,
+                "title":            a.title,
+                "subject":          a.subject,
+                "ai_status":        a.ai_generation_status,
+                "rec_status":       latest.status if latest else None,
+                "recommendation_id": latest.lesson_rec_id if latest else None,
+            })
+        return self.success_response(data, "Assignment status fetched")
 
 
 
