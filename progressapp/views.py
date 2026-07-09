@@ -86,4 +86,36 @@ class StudentMonthlyAttendanceTrendView(StandardResponseMixin, APIView):
         return self.success_response(result, "Monthly attendance trend fetched")
 
 
+class StudentWeeklyScoreView(StandardResponseMixin, APIView):
+    """
+    GET /api/progress/student/{student_id}/scores-weekly?weeks=8
+    Returns average assignment score per week for the last N weeks.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
 
+    def get(self, request, student_id):
+        try:
+            Student.objects.get(pk=student_id, teacher=request.user)
+        except Student.DoesNotExist:
+            return self.error_response("Student not found", 404)
+
+        weeks = min(int(request.query_params.get("weeks", 8)), 52)
+        today = date.today()
+        result = []
+
+        for i in range(weeks - 1, -1, -1):
+            week_end   = today - timedelta(days=today.weekday() + 7 * i)
+            week_start = week_end - timedelta(days=6)
+            qs  = AssignmentFeedback.objects.filter(
+                student_id=student_id,
+                assessment_date__range=(week_start, week_end))
+            agg = qs.aggregate(avg=Avg("score"), count=Count("feedback_id"))
+            result.append({
+                "week_start": week_start,
+                "week_end":   week_end,
+                "avg_score":  round(agg["avg"], 2) if agg["avg"] else None,
+                "count":      agg["count"],
+            })
+
+        return self.success_response(result, "Weekly score trend fetched")
