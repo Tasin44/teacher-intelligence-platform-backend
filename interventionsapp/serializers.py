@@ -25,3 +25,33 @@ class InterventionSerializer(serializers.ModelSerializer):
             "created_at", "updated_at",
         ]
         read_only_fields = ["intervention_id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        target_type  = attrs.get("target_type", getattr(self.instance, "target_type", None))
+        student_roll = attrs.get("student_roll", "")
+        group_id     = attrs.get("group_id")
+        teacher      = self.context["request"].user
+
+        if target_type == Intervention.TargetType.STUDENT:
+            if not student_roll:
+                raise serializers.ValidationError(
+                    {"student_roll": "Required when target_type is individual_student"})
+            from studentapp.models import Student
+            try:
+                attrs["_student"] = Student.objects.get(teacher=teacher, student_roll=student_roll)
+            except Student.DoesNotExist:
+                raise serializers.ValidationError({"student_roll": "No such student for this teacher"})
+
+        elif target_type == Intervention.TargetType.GROUP:
+            if not group_id:
+                raise serializers.ValidationError(
+                    {"group_id": "Required when target_type is individual_group"})
+            from groupapp.models import Group
+            try:
+                attrs["_group"] = Group.objects.get(teacher=teacher, pk=group_id)
+            except Group.DoesNotExist:
+                raise serializers.ValidationError({"group_id": "No such group for this teacher"})
+
+        return attrs
+
+
