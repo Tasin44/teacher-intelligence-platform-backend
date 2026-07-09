@@ -21,7 +21,7 @@ class AIParentMessage(models.Model):
 
     message_id     = models.BigAutoField(primary_key=True)
     teacher        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="parent_messages")
-    student        = models.ForeignKey("students.Student", on_delete=models.CASCADE,related_name="parent_messages")
+    student        = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE,related_name="parent_messages")
     classification = models.CharField(max_length=20, choices=Classification.choices)
     tone           = models.CharField(max_length=10, choices=Tone.choices)
     parent_email   = models.EmailField(max_length=150)

@@ -15,9 +15,9 @@ class Intervention(models.Model):
     target_type       = models.CharField(max_length=20, choices=TargetType.choices)
 
     # Student target fields
-    student           = models.ForeignKey("students.Student", on_delete=models.CASCADE,null=True, blank=True, related_name="interventions")
+    student           = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE,null=True, blank=True, related_name="interventions")
     # Group target fields
-    group             = models.ForeignKey("groups.Group", on_delete=models.CASCADE,null=True, blank=True, related_name="interventions")
+    group             = models.ForeignKey("groupapp.Group", on_delete=models.CASCADE,null=True, blank=True, related_name="interventions")
 
     intervention_type = models.TextField()
     reason            = models.TextField()

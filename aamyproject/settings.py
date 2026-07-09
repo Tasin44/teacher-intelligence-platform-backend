@@ -73,6 +73,11 @@ INSTALLED_APPS = [
     "behaviorapp",
     "observationsapp",
     "adminapp",
+    "interventionsapp",
+    "lesson_recommendationsapp",
+    "pacingapp",
+    "parent_messagesapp",
+    "progressapp",
 ]
 
 MIDDLEWARE = [

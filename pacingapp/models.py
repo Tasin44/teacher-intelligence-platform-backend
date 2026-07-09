@@ -8,7 +8,7 @@ from django.db import models
 class PacingRecommendation(models.Model):
     pacing_id                    = models.BigAutoField(primary_key=True)
     teacher                      = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="pacing_recommendations")
-    assignment                   = models.ForeignKey("assignments.Assignment", on_delete=models.CASCADE,related_name="pacing_recommendations",null=True, blank=True)
+    assignment                   = models.ForeignKey("assignmentapp.Assignment", on_delete=models.CASCADE,related_name="pacing_recommendations",null=True, blank=True)
     topic                        = models.CharField(max_length=200)
     # AI outputs
     curriculum_adjustment        = models.TextField()   # narrative AI recommendation

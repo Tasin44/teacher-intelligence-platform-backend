@@ -39,6 +39,21 @@ urlpatterns = [
 
     # ── Observations ──────────────────────────────────────
     path("api/observations/", include("observationsapp.urls")),
+
+    # ── Interventions ─────────────────────────────────────
+    path("api/interventions/", include("interventionsapp.urls")),
+
+    # ── Lesson Recommendations ────────────────────────────
+    path("api/lesson-recommendations/", include("lesson_recommendationsapp.urls")),
+
+    # ── Pacing ────────────────────────────────────────────
+    path("api/pacing/", include("pacingapp.urls")),
+
+    # ── Parent Messages ───────────────────────────────────
+    path("api/parent-messages/", include("parent_messagesapp.urls")),
+
+    # ── Progress ──────────────────────────────────────────
+    path("api/progress/", include("progressapp.urls")),
 ]
 
 from django.conf import settings
