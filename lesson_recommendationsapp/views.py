@@ -40,3 +40,24 @@ class GenerateLessonRecommendationView(StandardResponseMixin, APIView):
             "Lesson recommendation generated", status.HTTP_201_CREATED)
 
 
+class LessonRecommendationListView(StandardResponseMixin, APIView):
+    """
+    GET /api/lesson-recommendations/
+    ?assignment_id=  filter by assignment
+    ?status=applied|pending|dismiss
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
+
+    def get(self, request):
+        qs = (LessonRecommendation.objects
+              .filter(assignment__teacher=request.user)
+              .select_related("assignment", "applied_student", "applied_group"))
+        if aid := request.query_params.get("assignment_id"):
+            qs = qs.filter(assignment_id=aid)
+        if s := request.query_params.get("status"):
+            qs = qs.filter(status=s)
+        return self.success_response(
+            LessonRecommendationSerializer(qs, many=True).data,
+            "Lesson recommendations fetched")
+
