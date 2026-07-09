@@ -39,3 +39,18 @@ class GeneratePacingView(StandardResponseMixin, APIView):
             **result,
         )
         return self.success_response(PacingRecommendationSerializer(rec).data,"Pacing recommendation generated", status.HTTP_201_CREATED)
+
+
+class PacingListView(StandardResponseMixin, APIView):
+    """
+    GET /api/pacing/?topic=<keyword>
+    Returns all pacing recommendations for this teacher, optionally filtered by topic.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
+
+    def get(self, request):
+        qs = PacingRecommendation.objects.filter(teacher=request.user).select_related("assignment")
+        if topic := request.query_params.get("topic", "").strip():
+            qs = qs.filter(topic__icontains=topic)
+        return self.success_response(PacingRecommendationSerializer(qs, many=True).data,"Pacing recommendations fetched")
