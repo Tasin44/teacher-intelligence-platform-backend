@@ -25,3 +25,15 @@ class LessonRecommendationSerializer(serializers.ModelSerializer):
         if obj.applied_target_type == "group" and obj.applied_group:
             return f"group: {obj.applied_group.group_name}"
         return None
+class ApplyModificationSerializer(serializers.Serializer):
+    """Used when teacher clicks 'Apply Modification'."""
+    applied_target_type = serializers.ChoiceField(choices=["student", "group"])
+    applied_student_id  = serializers.IntegerField(required=False, allow_null=True)
+    applied_group_id    = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        if attrs["applied_target_type"] == "student" and not attrs.get("applied_student_id"):
+            raise serializers.ValidationError({"applied_student_id": "Required for student target"})
+        if attrs["applied_target_type"] == "group" and not attrs.get("applied_group_id"):
+            raise serializers.ValidationError({"applied_group_id": "Required for group target"})
+        return attrs
