@@ -18,3 +18,15 @@ class GenerateMessageSerializer(serializers.Serializer):
         if not self._student.parent_email:
             raise serializers.ValidationError("This student has no parent email on record")
         return value
+
+class AIParentMessageSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.student_name", read_only=True)
+    student_roll = serializers.CharField(source="student.student_roll", read_only=True)
+
+    class Meta:
+        model  = AIParentMessage
+        fields = [
+            "message_id", "student_name", "student_roll",
+            "classification", "tone", "parent_email",
+            "message_text", "status", "sent_at", "created_at",
+        ]
