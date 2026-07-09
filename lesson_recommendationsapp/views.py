@@ -61,3 +61,43 @@ class LessonRecommendationListView(StandardResponseMixin, APIView):
             LessonRecommendationSerializer(qs, many=True).data,
             "Lesson recommendations fetched")
 
+class ApplyModificationView(StandardResponseMixin, APIView):
+    """
+    POST /api/lesson-recommendations/{id}/apply
+    Teacher clicks 'Apply Modification' → sets applied_demographics + status=applied.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "write"
+
+    def post(self, request, rec_id):
+        try:
+            rec = LessonRecommendation.objects.select_related("assignment").get(
+                pk=rec_id, assignment__teacher=request.user)
+        except LessonRecommendation.DoesNotExist:
+            return self.error_response("Recommendation not found", status.HTTP_404_NOT_FOUND)
+
+        serializer = ApplyModificationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self.error_response("Validation failed",status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+
+        d = serializer.validated_data
+        rec.applied_target_type = d["applied_target_type"]
+        rec.applied_student_id  = d.get("applied_student_id")
+        rec.applied_group_id    = d.get("applied_group_id")
+        rec.status              = LessonRecommendation.Status.APPLIED
+        rec.save(update_fields=["applied_target_type", "applied_student_id","applied_group_id", "status"])
+
+        return self.success_response(LessonRecommendationSerializer(rec).data,"Modification applied")
+
+
+
+
+
+
+
+
+
+
+
+
+        
