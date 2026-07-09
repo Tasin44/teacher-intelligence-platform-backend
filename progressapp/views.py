@@ -119,3 +119,20 @@ class StudentWeeklyScoreView(StandardResponseMixin, APIView):
             })
 
         return self.success_response(result, "Weekly score trend fetched")
+
+class ClassAttendanceRateView(StandardResponseMixin, APIView):
+    """
+    GET /api/progress/class-attendance
+    Overall attendance rate across all students for this teacher.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "read"
+
+    def get(self, request):
+        student_ids = Student.objects.filter(teacher=request.user).values_list("student_id", flat=True)
+        qs          = Attendance.objects.filter(student_id__in=student_ids)
+        total       = qs.count()
+        present     = qs.filter(status__in=["present", "late"]).count()
+        rate        = round((present / total) * 100, 2) if total else None
+        return self.success_response({"class_attendance_rate": rate, "total_days_recorded": total},"Class attendance rate fetched")
+
