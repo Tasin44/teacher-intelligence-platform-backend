@@ -46,3 +46,30 @@ class GenerateParentMessageView(StandardResponseMixin, APIView):
             status         = AIParentMessage.Status.DRAFT,
         )
         return self.success_response(AIParentMessageSerializer(msg).data,"Message generated successfully", status.HTTP_201_CREATED)
+
+
+class SendParentMessageView(StandardResponseMixin, APIView):
+    """
+    POST /api/parent-messages/{message_id}/send
+    Sends the drafted message to the parent email.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope     = "write"
+
+    def post(self, request, message_id):
+        try:
+            msg = AIParentMessage.objects.select_related("student").get(
+                pk=message_id, teacher=request.user)
+        except AIParentMessage.DoesNotExist:
+            return self.error_response("Message not found", status.HTTP_404_NOT_FOUND)
+
+        if msg.status == AIParentMessage.Status.SENT:
+            return self.error_response("Message already sent", status.HTTP_400_BAD_REQUEST)
+
+        send_parent_email(msg.parent_email, msg.student.student_name, msg.message_text)
+
+        msg.status  = AIParentMessage.Status.SENT
+        msg.sent_at = timezone.now()
+        msg.save(update_fields=["status", "sent_at"])
+
+        return self.success_response(AIParentMessageSerializer(msg).data,"Message sent to parent")
