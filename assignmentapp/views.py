@@ -173,3 +173,69 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                    .prefetch_related("questions"))
         return self.success_response(AssignmentListSerializer(results, many=True).data,
                                       "Assignments matched")
+
+    @action(detail=True, methods=["get"], url_path="download-pdf")
+    def download_pdf(self, request, pk=None):
+        """
+        GET /api/assignments/{id}/download-pdf/
+        Generates and downloads the assignment as a PDF file.
+        """
+        assignment = self.get_object()
+        
+        from django.http import HttpResponse
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from textwrap import wrap
+        import io
+
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        # Draw Title
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, height - 50, f"Assignment: {assignment.title}")
+
+        # Draw details
+        p.setFont("Helvetica", 12)
+        p.drawString(50, height - 80, f"Subject: {assignment.subject}")
+        p.drawString(50, height - 100, f"Difficulty: {assignment.ai_difficulty}")
+        if assignment.due_date:
+            p.drawString(50, height - 120, f"Due Date: {assignment.due_date}")
+
+        y = height - 150
+        if assignment.instructions:
+            p.drawString(50, y, "Instructions:")
+            y -= 20
+            for line in wrap(assignment.instructions, width=80):
+                if y < 50:
+                    p.showPage()
+                    y = height - 50
+                    p.setFont("Helvetica", 12)
+                p.drawString(50, y, line)
+                y -= 20
+        
+        y -= 20
+        p.setFont("Helvetica-Bold", 14)
+        p.drawString(50, y, "Questions:")
+        y -= 30
+
+        p.setFont("Helvetica", 12)
+        for idx, q in enumerate(assignment.questions.all(), start=1):
+            question_lines = wrap(f"{idx}. {q.question_text}", width=80)
+            for line in question_lines:
+                if y < 50:
+                    p.showPage()
+                    y = height - 50
+                    p.setFont("Helvetica", 12)
+                p.drawString(50, y, line)
+                y -= 20
+            y -= 10
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="assignment_{assignment.unique_assignment_code}.pdf"'
+        return response
