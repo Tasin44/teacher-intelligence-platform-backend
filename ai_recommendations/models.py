@@ -6,7 +6,7 @@ from django.db import models
 
 class AIRecommendation(models.Model):
     recommendation_id      = models.BigAutoField(primary_key=True)
-    student                = models.ForeignKey("students.Student", on_delete=models.CASCADE,related_name="ai_recommendations", db_index=True)
+    student                = models.ForeignKey("studentapp.Student", on_delete=models.CASCADE,related_name="ai_recommendations", db_index=True)
     current_strengths      = models.TextField()       # 5 bullet points
     recommended_activities = models.TextField()       # 5 bullet points
     skill_gaps             = models.TextField()       # 5 bullet points

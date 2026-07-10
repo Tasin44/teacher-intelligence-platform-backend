@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "behaviorapp",
     "observationsapp",
     "adminapp",
+    "ai_recommendations",
     "interventionsapp",
     "lesson_recommendationsapp",
     "pacingapp",

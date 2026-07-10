@@ -43,6 +43,11 @@ def generate_parent_message(student, classification: str, tone: str) -> str:
     Returns the message text string.
     """
     context = _build_student_context(student)
+    teacher = student.teacher
+    school_name = teacher.school.school_name if teacher.school else "Your School"
+    teacher_name = f"{teacher.first_name} {teacher.last_name}"
+    teacher_email = teacher.email
+
     tone_desc = {
         "formal":   "professional and formal, suitable for official school communication",
         "friendly": "warm, encouraging, and conversational",
@@ -58,7 +63,11 @@ def generate_parent_message(student, classification: str, tone: str) -> str:
         "You are a K-12 teacher drafting a parent communication. Write a single, complete message "
         f"that is {tone_desc}. The message purpose is {trigger_desc}. "
         "Use the student data provided. Respond ONLY with valid JSON: "
-        '{"message": "full message text here"}'
+        '{"message": "full message text here"}\n'
+        "End the message with a professional signature using this teacher information:\n"
+        f"Name: {teacher_name}\n"
+        f"School: {school_name}\n"
+        f"Email: {teacher_email}"
     )
     try:
         client   = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -78,10 +87,17 @@ def generate_parent_message(student, classification: str, tone: str) -> str:
 
 def send_parent_email(to_email: str, student_name: str, message_text: str):
     """
-    Stub: replace with SendGrid / AWS SES in production.
-    In production also generate a PDF attachment here if required.
+    Sends the drafted message to the parent's email.
     """
-    logger.info("[EMAIL STUB] To: %s | Student: %s | Preview: %s…",
-                to_email, student_name, message_text[:80])
-    # from sendgrid import SendGridAPIClient
-    # ...
+    from django.core.mail import send_mail
+    logger.info("Sending email to: %s | Student: %s", to_email, student_name)
+    
+    subject = f"Update regarding {student_name}"
+    
+    send_mail(
+        subject=subject,
+        message=message_text,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[to_email],
+        fail_silently=False,
+    )

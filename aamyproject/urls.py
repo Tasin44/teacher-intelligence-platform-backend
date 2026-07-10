@@ -54,6 +54,9 @@ urlpatterns = [
 
     # ── Progress ──────────────────────────────────────────
     path("api/progress/", include("progressapp.urls")),
+
+    # ── Progress ──────────────────────────────────────────
+    path("api/ai-recommendations/", include("ai_recommendations.urls")),
 ]
 
 from django.conf import settings
