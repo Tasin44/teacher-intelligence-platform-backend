@@ -77,3 +77,17 @@ class AssignmentMailLog(models.Model):
 
     class Meta:
         db_table = "assignment_mail_log"
+
+class AssignmentSubmission(models.Model):
+    submission_id = models.BigAutoField(primary_key=True)
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="submissions")
+    student_name = models.CharField(max_length=200)
+    roll_number = models.CharField(max_length=50)
+    grade = models.CharField(max_length=50)
+    parent_name = models.CharField(max_length=200)
+    attachment = models.FileField(upload_to="assignment_submissions/")
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "assignment_submissions"
+        ordering = ["-submitted_at"]

@@ -6,8 +6,12 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 """
 from django.contrib import admin
 from django.urls import path, include
+from assignmentapp.views import ServeAssignmentSubmissionView
 
 urlpatterns = [
+    # ── Frontend HTML Pages ───────────────────────────────
+    path("assignments/<str:unique_code>/submit", ServeAssignmentSubmissionView.as_view(), name="serve-assignment-submission"),
+
     path("admin/", admin.site.urls),
 
     # ── Admin ─────────────────────────────────────────────

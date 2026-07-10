@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment Submission | TeachersAiPet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff6b2b; /* Matches main project orange */
+            --primary-hover: #e85a1f;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --input-bg: #f1f5f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: radial-gradient(circle at 10% 20%, rgba(255, 107, 43, 0.05) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(255, 107, 43, 0.05) 0%, transparent 20%);
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 550px;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05), 0 20px 48px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.1);
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--primary);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(255, 107, 43, 0.1);
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            border: 2px dashed var(--border-color);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            background-color: var(--input-bg);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: var(--primary);
+            background-color: rgba(255, 107, 43, 0.02);
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-text {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .file-upload-text span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        #file-name-display {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 43, 0.3);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Submit Assignment</h1>
+            <p>Please fill out the details below and attach your completed assignment.</p>
+        </div>
+
+        <div id="alert-msg" class="alert"></div>
+
+        <form id="submissionForm">
+            <div class="form-group">
+                <label for="student_name">Student Name</label>
+                <input type="text" id="student_name" name="student_name" class="form-control" placeholder="Enter student's full name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="roll_number">Roll Number</label>
+                <input type="text" id="roll_number" name="roll_number" class="form-control" placeholder="e.g. R001" required>
+            </div>
+
+            <div class="form-group">
+                <label for="grade">Grade/Class</label>
+                <input type="text" id="grade" name="grade" class="form-control" placeholder="e.g. 5th Grade" required>
+            </div>
+
+            <div class="form-group">
+                <label for="parent_name">Parent's Name</label>
+                <input type="text" id="parent_name" name="parent_name" class="form-control" placeholder="Enter parent's full name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Assignment Attachment</label>
+                <div class="file-upload-wrapper">
+                    <p class="file-upload-text">Drag & drop your file here or <span>browse</span></p>
+                    <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px;">Accepted formats: PDF, JPG, PNG, DOCX</p>
+                    <input type="file" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                    <span id="file-name-display"></span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span id="btnText">Submit Assignment</span>
+                <div class="loading-spinner" id="spinner"></div>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('attachment');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        
+        fileInput.addEventListener('change', function(e) {
+            if(e.target.files.length > 0) {
+                fileNameDisplay.textContent = 'Selected: ' + e.target.files[0].name;
+                document.querySelector('.file-upload-text').style.display = 'none';
+            } else {
+                fileNameDisplay.textContent = '';
+                document.querySelector('.file-upload-text').style.display = 'block';
+            }
+        });
+
+        document.getElementById('submissionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('spinner');
+            const alertMsg = document.getElementById('alert-msg');
+            
+            // Extract assignment code from URL path
+            // Format: http://127.0.0.1:8037/assignments/AS-FDE7A987C8/submit
+            const pathParts = window.location.pathname.split('/');
+            let assignmentCode = pathParts[pathParts.length - 2]; 
+            
+            // Fallback for local testing if path doesn't match
+            if (!assignmentCode || assignmentCode === 'assignments' || assignmentCode.endsWith('.html')) {
+                assignmentCode = prompt("Enter Assignment Code (e.g., AS-XXXXX):");
+                if(!assignmentCode) return;
+            }
+
+            const formData = new FormData(this);
+
+            // Loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+            alertMsg.style.display = 'none';
+
+            try {
+                // Use relative URL so it dynamically matches the host/port (e.g. 8037)
+                const backendUrl = `/api/assignments/public/${assignmentCode}/submit`;
+                
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alertMsg.textContent = 'Assignment submitted successfully!';
+                    alertMsg.className = 'alert alert-success';
+                    alertMsg.style.display = 'block';
+                    this.reset();
+                    fileNameDisplay.textContent = '';
+                    document.querySelector('.file-upload-text').style.display = 'block';
+                } else {
+                    let errMsg = 'Submission failed. ';
+                    if(data.errors) {
+                        errMsg += Object.values(data.errors).flat().join(', ');
+                    } else if(data.message) {
+                        errMsg = data.message;
+                    }
+                    alertMsg.textContent = errMsg;
+                    alertMsg.className = 'alert alert-error';
+                    alertMsg.style.display = 'block';
+                }
+            } catch (error) {
+                alertMsg.textContent = 'Network error. Please make sure the backend server is running.';
+                alertMsg.className = 'alert alert-error';
+                alertMsg.style.display = 'block';
+            } finally {
+                // Reset loading state
+                submitBtn.disabled = false;
+                btnText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
