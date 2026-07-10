@@ -8,6 +8,8 @@ from coreapp.permissions import IsOwnerTeacher
 from coreapp.response import StandardResponseMixin
 from .models import Student
 from .serializers import StudentCreateSerializer, StudentListSerializer
+from django.db import models
+from rest_framework.views import APIView
 
 class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
@@ -70,3 +72,28 @@ class StudentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
         instance.delete()
         bump_teacher_cache_version(request.user.pk)
         return self.success_response(None, "Student deleted")
+
+class StudentSearchView(StandardResponseMixin, APIView):
+    """
+    GET /api/students/search/?q=...
+    Search students based on name, roll, risk status, or parent name.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        qs = Student.objects.filter(teacher=request.user).select_related("recommended_group")
+        
+        if query:
+            qs = qs.filter(
+                models.Q(student_name__icontains=query) |
+                models.Q(student_roll__icontains=query) |
+                models.Q(risk_status__icontains=query) |
+                models.Q(parent_name__icontains=query)
+            )
+        
+        return self.success_response(
+            StudentListSerializer(qs, many=True, context={"request": request}).data,
+            "Search results fetched"
+        )
