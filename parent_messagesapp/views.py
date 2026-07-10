@@ -158,4 +158,26 @@ class DownloadParentMessagePDFView(StandardResponseMixin, APIView):
         response['Content-Disposition'] = f'attachment; filename="parent_message_{message_id}.pdf"'
         return response
 
+class ParentMessageDetailView(StandardResponseMixin, APIView):
+    """
+    PATCH /api/parent-messages/{message_id}/
+    Allows the teacher to edit the drafted message text before sending.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "write"
 
+    def patch(self, request, message_id):
+        try:
+            msg = AIParentMessage.objects.get(pk=message_id, teacher=request.user)
+        except AIParentMessage.DoesNotExist:
+            return self.error_response("Message not found", status.HTTP_404_NOT_FOUND)
+
+        if msg.status == AIParentMessage.Status.SENT:
+            return self.error_response("Cannot edit a message that has already been sent.", status.HTTP_400_BAD_REQUEST)
+
+        serializer = AIParentMessageSerializer(msg, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return self.error_response("Update failed", status.HTTP_422_UNPROCESSABLE_ENTITY, serializer.errors)
+        
+        serializer.save()
+        return self.success_response(serializer.data, "Message updated successfully")

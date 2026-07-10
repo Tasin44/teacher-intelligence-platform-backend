@@ -3,7 +3,7 @@ from .views import (
     AdminLoginView, AdminDashboardStatsView, AdminPlatformUsageView,
     AdminTeacherViewSet, AdminTeacherActivityView, AdminSchoolViewSet,
     AdminAnalysisReportView, AdminAIConfigView, AdminAllTeachersActivityView,
-    AdminTeacherApproveView
+    AdminTeacherApproveView, AdminAnalysisReportDetailView, DownloadAnalysisReportPDFView
 )
 
 urlpatterns = [
@@ -21,5 +21,7 @@ urlpatterns = [
     path("schools/<int:pk>/", AdminSchoolViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name="admin-school-detail"),
     
     path("analysis-report", AdminAnalysisReportView.as_view(), name="admin-analysis-report"),
+    path("analysis-report/<int:pk>/", AdminAnalysisReportDetailView.as_view(), name="admin-analysis-report-detail"),
+    path("analysis-report/<int:pk>/download-pdf", DownloadAnalysisReportPDFView.as_view(), name="admin-analysis-report-download-pdf"),
     path("ai-config", AdminAIConfigView.as_view(), name="admin-ai-config"),
 ]

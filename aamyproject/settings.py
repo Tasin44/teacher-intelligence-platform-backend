@@ -182,10 +182,10 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "auth": "5/minute",
-        "read": "60/minute",
-        "write": "30/minute",
-        "ai_generate": "10/minute",
+        "auth": "5000/minute",
+        "read": "6000/minute",
+        "write": "3000/minute",
+        "ai_generate": "1000/minute",
     },
     "EXCEPTION_HANDLER": "coreapp.exceptions.standard_exception_handler",
     "DEFAULT_FILTER_BACKENDS": [

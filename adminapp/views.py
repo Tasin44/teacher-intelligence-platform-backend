@@ -276,9 +276,18 @@ class AdminSchoolViewSet(StandardResponseMixin, viewsets.ModelViewSet):
 
 
 class AdminAnalysisReportView(StandardResponseMixin, APIView):
-    """POST /api/admin/analysis-report"""
+    """
+    GET /api/admin/analysis-report
+    POST /api/admin/analysis-report
+    """
     permission_classes = [IsAdminUser]
     throttle_scope = "ai_generate"
+
+    def get(self, request):
+        from .models import AnalysisReport
+        from .serializers import AnalysisReportSerializer
+        qs = AnalysisReport.objects.select_related("school").all()
+        return self.success_response(AnalysisReportSerializer(qs, many=True).data, "Analysis reports fetched.")
     
     def post(self, request):
         serializer = AnalysisReportRequestSerializer(data=request.data)
@@ -327,6 +336,17 @@ class AdminAnalysisReportView(StandardResponseMixin, APIView):
                 max_tokens=config.max_tokens
             )
             
+            report_text = parsed.get("report", "Report generation failed.")
+            
+            # Save the report
+            from .models import AnalysisReport
+            report_obj = AnalysisReport.objects.create(
+                school=school,
+                analytical_focus=focus,
+                temporal_bounds=days,
+                report_text=report_text
+            )
+            
             # We log admin AI usage with no specific teacher
             AIUsageLog.objects.create(
                 teacher=request.user, # The admin user
@@ -334,10 +354,80 @@ class AdminAnalysisReportView(StandardResponseMixin, APIView):
                 endpoint="analysis_report"
             )
             
-            return self.success_response({"report": parsed.get("report", "Report generation failed.")}, "Analysis complete.")
+            return self.success_response({
+                "report": report_text,
+                "report_id": report_obj.report_id
+            }, "Analysis complete.")
         except AIServiceError as exc:
             return self.error_response(f"AI generation failed: {exc}", status.HTTP_502_BAD_GATEWAY)
 
+class AdminAnalysisReportDetailView(StandardResponseMixin, APIView):
+    """GET /api/admin/analysis-report/<id>/"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk):
+        from .models import AnalysisReport
+        from .serializers import AnalysisReportSerializer
+        try:
+            report = AnalysisReport.objects.select_related("school").get(pk=pk)
+            return self.success_response(AnalysisReportSerializer(report).data, "Analysis report fetched.")
+        except AnalysisReport.DoesNotExist:
+            return self.error_response("Analysis report not found.", status.HTTP_404_NOT_FOUND)
+
+class DownloadAnalysisReportPDFView(StandardResponseMixin, APIView):
+    """GET /api/admin/analysis-report/<id>/download-pdf"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk):
+        from .models import AnalysisReport
+        try:
+            report = AnalysisReport.objects.select_related("school").get(pk=pk)
+        except AnalysisReport.DoesNotExist:
+            return self.error_response("Analysis report not found.", status.HTTP_404_NOT_FOUND)
+
+        from django.http import HttpResponse
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from textwrap import wrap
+        import io
+
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        # Title
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, height - 50, "Admin Analysis Report")
+        
+        # Details
+        p.setFont("Helvetica", 12)
+        p.drawString(50, height - 80, f"School: {report.school.school_name}")
+        p.drawString(50, height - 100, f"Topic: {report.analytical_focus}")
+        p.drawString(50, height - 120, f"Timeframe: Last {report.temporal_bounds} days")
+        p.drawString(50, height - 140, f"Date: {report.created_at.strftime('%B %d, %Y')}")
+
+        # Message Text
+        y = height - 180
+        p.setFont("Helvetica", 12)
+        for p_text in report.report_text.split('\n'):
+            if p_text.strip():
+                for line in wrap(p_text, width=80):
+                    if y < 50:
+                        p.showPage()
+                        y = height - 50
+                        p.setFont("Helvetica", 12)
+                    p.drawString(50, y, line)
+                    y -= 20
+            else:
+                y -= 10
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="analysis_report_{pk}.pdf"'
+        return response
 
 class AdminAIConfigView(StandardResponseMixin, APIView):
     """

@@ -55,3 +55,15 @@ class AIUsageLog(models.Model):
             models.Index(fields=["teacher"]),
             models.Index(fields=["school"]),
         ]
+
+class AnalysisReport(models.Model):
+    report_id = models.BigAutoField(primary_key=True)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="analysis_reports")
+    analytical_focus = models.CharField(max_length=255)
+    temporal_bounds = models.IntegerField()
+    report_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "analysis_reports"
+        ordering = ["-created_at"]

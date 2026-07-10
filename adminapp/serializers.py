@@ -97,3 +97,11 @@ class AnalysisReportRequestSerializer(serializers.Serializer):
     analyticalFocus = serializers.CharField(max_length=255)
     targetSchoolRange = serializers.PrimaryKeyRelatedField(queryset=School.objects.all())
     temporalBounds = serializers.IntegerField(help_text="Last how many days", min_value=1)
+
+class AnalysisReportSerializer(serializers.ModelSerializer):
+    school_name = serializers.CharField(source="school.school_name", read_only=True)
+    
+    class Meta:
+        from .models import AnalysisReport
+        model = AnalysisReport
+        fields = ["report_id", "school", "school_name", "analytical_focus", "temporal_bounds", "report_text", "created_at"]
