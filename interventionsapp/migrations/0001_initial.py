@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 'db_table': 'interventions',
                 'ordering': ['-created_at'],
                 'indexes': [models.Index(fields=['teacher', 'target_type'], name='interventio_teacher_f807f9_idx'), models.Index(fields=['student'], name='interventio_student_0cbe5f_idx'), models.Index(fields=['group'], name='interventio_group_i_65c374_idx')],
-                'constraints': [models.CheckConstraint(condition=models.Q(models.Q(('group__isnull', True), ('student__isnull', False), ('target_type', 'individual_student')), models.Q(('group__isnull', False), ('student__isnull', True), ('target_type', 'individual_group')), _connector='OR'), name='chk_intervention_target_consistency')],
+                'constraints': [models.CheckConstraint(check=models.Q(models.Q(('group__isnull', True), ('student__isnull', False), ('target_type', 'individual_student')), models.Q(('group__isnull', False), ('student__isnull', True), ('target_type', 'individual_group')), _connector='OR'), name='chk_intervention_target_consistency')],
             },
         ),
     ]
