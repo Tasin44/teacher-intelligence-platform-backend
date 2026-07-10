@@ -100,4 +100,62 @@ class ParentMessageListView(StandardResponseMixin, APIView):
             AIParentMessageSerializer(qs, many=True).data,
             "Parent messages fetched")
 
+class DownloadParentMessagePDFView(StandardResponseMixin, APIView):
+    """
+    GET /api/parent-messages/{message_id}/download-pdf
+    Generates and downloads the parent message as a PDF file.
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
+
+    def get(self, request, message_id):
+        from django.http import HttpResponse
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from textwrap import wrap
+        import io
+
+        try:
+            msg = AIParentMessage.objects.select_related("student").get(
+                pk=message_id, teacher=request.user)
+        except AIParentMessage.DoesNotExist:
+            return self.error_response("Message not found", status.HTTP_404_NOT_FOUND)
+
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        # Title
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, height - 50, "Parent Message")
+        
+        # Details
+        p.setFont("Helvetica", 12)
+        p.drawString(50, height - 80, f"Student: {msg.student.student_name}")
+        p.drawString(50, height - 100, f"Classification: {msg.classification.title()}")
+        p.drawString(50, height - 120, f"Date: {msg.created_at.strftime('%B %d, %Y')}")
+
+        # Message Text
+        y = height - 160
+        p.setFont("Helvetica", 12)
+        for p_text in msg.message_text.split('\n'):
+            if p_text.strip():
+                for line in wrap(p_text, width=80):
+                    if y < 50:
+                        p.showPage()
+                        y = height - 50
+                        p.setFont("Helvetica", 12)
+                    p.drawString(50, y, line)
+                    y -= 20
+            else:
+                y -= 10
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="parent_message_{message_id}.pdf"'
+        return response
+
 
