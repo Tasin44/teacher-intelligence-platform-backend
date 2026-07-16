@@ -97,3 +97,131 @@ class StudentSearchView(StandardResponseMixin, APIView):
             StudentListSerializer(qs, many=True, context={"request": request}).data,
             "Search results fetched"
         )
+
+
+class StudentDiagnosticView(StandardResponseMixin, APIView):
+    """
+    GET /api/students/{student_id}/diagnostic/
+    Uses AI to generate:
+      - Current Strengths
+      - Skill Gaps & Standards Blockages
+    based on the student's full profile (scores, attendance, behavior, observations).
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai_generate"
+
+    def get(self, request, student_id):
+        # --- Fetch student (must belong to the requesting teacher) ---
+        try:
+            student = Student.objects.select_related("recommended_group").get(
+                pk=student_id, teacher=request.user
+            )
+        except Student.DoesNotExist:
+            return self.error_response("Student not found.", status.HTTP_404_NOT_FOUND)
+
+        # --- Gather context data from related apps ---
+        from behaviorapp.models import BehaviorFeedback
+        from observationsapp.models import Observation
+        from feedbackapp.models import AssignmentFeedback
+        from attendenceapp.models import Attendance
+
+        # Behavior notes (last 10)
+        behavior_notes = list(
+            BehaviorFeedback.objects.filter(student=student)
+            .order_by("-event_date")[:10]
+            .values("incident_classification", "observation_note", "event_date")
+        )
+
+        # Teacher observations (last 10)
+        observations = list(
+            Observation.objects.filter(student=student)
+            .order_by("-observation_date")[:10]
+            .values("setting_tag", "notes", "observation_date")
+        )
+
+        # Assignment feedback (last 10 scores)
+        feedback = list(
+            AssignmentFeedback.objects.filter(student=student)
+            .order_by("-assessment_date")[:10]
+            .values("subject", "score", "ccss_code", "assessment_date")
+        )
+
+        # Recent attendance records
+        recent_attendance = list(
+            Attendance.objects.filter(student=student)
+            .order_by("-attendance_date")[:20]
+            .values("attendance_date", "status")
+        )
+
+        # --- Build prompt ---
+        prompt = f"""
+        You are an expert educational diagnostician. Analyze the following data for a student and produce a diagnostic profile.
+
+        STUDENT PROFILE:
+        - Name: {student.student_name}
+        - Grade: {student.student_grade}
+        - Reading Level: {student.reading_level or 'Not Set'}
+        - Risk Status: {student.risk_status}
+        - Average Score: {student.avg_score or 'N/A'}%
+        - Attendance Rate: {student.attendance_rate or 'N/A'}%
+        - Recommended Group: {student.recommended_group.group_name if student.recommended_group else 'None'}
+
+        RECENT ASSIGNMENT SCORES (last 10):
+        {feedback if feedback else 'No assignment feedback available.'}
+
+        RECENT BEHAVIOR NOTES (last 10):
+        {behavior_notes if behavior_notes else 'No behavior records available.'}
+
+        TEACHER OBSERVATIONS (last 10):
+        {observations if observations else 'No observations available.'}
+
+        RECENT ATTENDANCE (last 20 days):
+        {recent_attendance if recent_attendance else 'No attendance records available.'}
+
+        Based on this data, identify:
+        1. Current Strengths (3-4 specific, positive bullet points about what this student does well)
+        2. Skill Gaps & Standards Blockages (3-4 specific bullet points of what this student struggles with, including CCSS standards references where relevant)
+
+        Return ONLY a valid JSON object in this exact format:
+        {{
+            "current_strengths": [
+                "strength 1",
+                "strength 2",
+                "strength 3"
+            ],
+            "skill_gaps_and_blockages": [
+                "gap/blockage 1",
+                "gap/blockage 2",
+                "gap/blockage 3"
+            ],
+            "generated_at": "ISO datetime string"
+        }}
+        """
+
+        # --- Call AI ---
+        from coreapp.ai_utils import call_openai_with_retry, AIServiceError
+        from django.utils import timezone
+
+        try:
+            ai_result = call_openai_with_retry(
+                messages=[
+                    {"role": "system", "content": "You are an expert educational diagnostician. Always respond with valid JSON only."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.6,
+                max_tokens=700,
+            )
+        except AIServiceError as e:
+            return self.error_response(str(e), status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # --- Build response ---
+        response_data = {
+            "student": StudentListSerializer(student, context={"request": request}).data,
+            "diagnostic": {
+                "current_strengths": ai_result.get("current_strengths", []),
+                "skill_gaps_and_blockages": ai_result.get("skill_gaps_and_blockages", []),
+                "generated_at": ai_result.get("generated_at", timezone.now().isoformat()),
+            }
+        }
+
+        return self.success_response(response_data, "Student diagnostic generated successfully.")
