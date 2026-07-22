@@ -26,6 +26,11 @@ class OffDayView(StandardResponseMixin, APIView):
         return self.success_response(OffDaySerializer(off_day).data, "Off day created",
                                       status.HTTP_201_CREATED)
 
+    def get(self, request):
+        off_days = OffDay.objects.filter(teacher=request.user).order_by("-off_date")
+        data = OffDaySerializer(off_days, many=True).data
+        return self.success_response(data, "Off days fetched")
+
 
 
 class AttendanceView(StandardResponseMixin, APIView):
