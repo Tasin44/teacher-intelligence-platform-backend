@@ -1,6 +1,7 @@
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Max, Count
+from django.db.models.functions import TruncDate
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -117,3 +118,28 @@ class GroupGenerationHistoryView(StandardResponseMixin, APIView):
             data = GroupGenerationHistorySerializer(rows, many=True).data
             cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
         return self.success_response(data, "Generation history fetched")
+
+class GroupGenerateHistorySummaryView(StandardResponseMixin, APIView):
+    """GET /api/groups/generate/history"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
+
+    def get(self, request):
+        cache_key = scoped_cache_key(request.user.pk, "group_gen_summary")
+        data = cache.get(cache_key)
+        if data is None:
+            qs = (GroupGenerationHistory.objects.filter(teacher=request.user)
+                  .annotate(date=TruncDate("generated_date"))
+                  .values("date")
+                  .annotate(groups_formed=Count("id"))
+                  .order_by("-date"))
+            
+            data = [
+                {
+                    "date": item["date"],
+                    "groups_formed": item["groups_formed"]
+                }
+                for item in qs
+            ]
+            cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
+        return self.success_response(data, "Generation history summary fetched")
