@@ -16,6 +16,7 @@ def generate_lesson_recommendation(assignment) -> str:
     """
     Analyses assignment feedback scores and returns a lesson recommendation
     covering struggling students (low scores) and advanced students (high scores).
+    Returns a valid JSON string with keys: strugglingStudents, advancedStudents.
     """
     from feedbackapp.models import AssignmentFeedback
 
@@ -26,7 +27,6 @@ def generate_lesson_recommendation(assignment) -> str:
         .order_by("score")
     )
     if not scores:
-        # Fall back to instruction-only recommendation when no scores exist yet
         score_summary = "No scores submitted yet."
     else:
         avg   = sum(s["score"] for s in scores) / len(scores)
@@ -40,9 +40,12 @@ def generate_lesson_recommendation(assignment) -> str:
 
     system_prompt = (
         "You are an expert K-12 instructional coach. Based on the assignment details and score "
-        "summary, provide differentiated lesson recommendations for both struggling and advanced "
-        "students. Respond ONLY with valid JSON:\n"
-        '{"recommendation": "detailed multi-line recommendation here"}'
+        "summary, provide differentiated lesson recommendations. "
+        "Respond ONLY with valid JSON in exactly this format:\n"
+        '{"strugglingStudents": ["tip 1", "tip 2", "tip 3"], '
+        '"advancedStudents": ["tip 1", "tip 2", "tip 3"]}\n'
+        "Each array must have 3 actionable, specific teaching tips. "
+        "Do NOT use single quotes. Do NOT include any other keys."
     )
     user_prompt = (
         f"Assignment: {assignment.title}\n"
@@ -62,7 +65,23 @@ def generate_lesson_recommendation(assignment) -> str:
             temperature     = 0.4,
             max_tokens      = 800,
         )
-        return json.loads(response.choices[0].message.content)["recommendation"]
+        raw = json.loads(response.choices[0].message.content)
+
+        # Normalise: AI may wrap under "recommendation" key or return directly
+        if "strugglingStudents" not in raw and "recommendation" in raw:
+            inner = raw["recommendation"]
+            if isinstance(inner, dict):
+                raw = inner
+            else:
+                # Fallback: wrap plain text as a single tip
+                raw = {
+                    "strugglingStudents": [str(inner)],
+                    "advancedStudents": []
+                }
+
+        # Always store as proper JSON string (never Python repr)
+        return json.dumps(raw, ensure_ascii=False)
+
     except (OpenAIError, json.JSONDecodeError, KeyError) as exc:
         logger.error("Lesson recommendation AI failed: %s", exc)
         raise LessonRecommendationError(str(exc)) from exc
