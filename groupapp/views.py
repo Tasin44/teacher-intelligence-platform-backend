@@ -143,3 +143,13 @@ class GroupGenerateHistorySummaryView(StandardResponseMixin, APIView):
             ]
             cache.set(cache_key, data, timeout=CACHE_TTL_DASHBOARD)
         return self.success_response(data, "Generation history summary fetched")
+
+class GroupAllView(StandardResponseMixin, APIView):
+    """GET /api/groups/all -> unpaginated list of all group details"""
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "read"
+
+    def get(self, request):
+        groups = Group.objects.filter(teacher=request.user).prefetch_related("memberships__student")
+        data = GroupSerializer(groups, many=True).data
+        return self.success_response(data, "All groups fetched")
