@@ -64,7 +64,75 @@ class AssignmentViewSet(StandardResponseMixin, viewsets.ModelViewSet):
                 .prefetch_related("questions"))
 
     def get_serializer_class(self):
-        return AssignmentCreateSerializer if self.action == "create" else AssignmentListSerializer
+        if self.action in ("create", "update", "partial_update"):
+            return AssignmentCreateSerializer
+        return AssignmentListSerializer
+
+    AI_REGEN_FIELDS = {"instructions", "subject", "ccss_code", "ai_difficulty", "number_of_questions"}
+
+    @transaction.atomic
+    def partial_update(self, request, *args, **kwargs):
+        """PATCH /api/assignments/{id}/ — update fields; regenerate AI questions if content-related fields change."""
+        instance = self.get_object()
+        serializer = AssignmentCreateSerializer(
+            instance, data=request.data, partial=True, context={"request": request}
+        )
+        if not serializer.is_valid():
+            return self.error_response(
+                "Could not update assignment",
+                status.HTTP_400_BAD_REQUEST,
+                serializer.errors,
+            )
+
+        # Check if any AI-relevant field is being updated
+        should_regen = bool(self.AI_REGEN_FIELDS & set(request.data.keys()))
+
+        assignment = serializer.save()
+
+        if should_regen:
+            # Delete old questions and regenerate
+            assignment.questions.all().delete()
+            assignment.ai_generation_status = "pending"
+            assignment.save(update_fields=["ai_generation_status"])
+
+            try:
+                questions = generate_assignment_questions(
+                    subject=assignment.subject,
+                    ccss_code=assignment.ccss_code,
+                    difficulty=assignment.ai_difficulty,
+                    number_of_questions=assignment.number_of_questions,
+                    instructions=assignment.instructions,
+                    grade_level=getattr(request.user, "grade", ""),
+                )
+                AssignmentQuestion.objects.bulk_create([
+                    AssignmentQuestion(assignment=assignment, question_text=q, question_order=i)
+                    for i, q in enumerate(questions, start=1)
+                ])
+                assignment.ai_generation_status = "completed"
+                if getattr(request.user, "school", None):
+                    AIUsageLog.objects.create(
+                        teacher=request.user,
+                        school=request.user.school,
+                        endpoint="assignment_regeneration"
+                    )
+            except AIGenerationError as exc:
+                assignment.ai_generation_status = "failed"
+                assignment.save(update_fields=["ai_generation_status"])
+                bump_teacher_cache_version(request.user.pk)
+                return self.error_response(
+                    f"Assignment saved but AI question regeneration failed: {exc}",
+                    status.HTTP_502_BAD_GATEWAY,
+                    {"assignment_id": assignment.assignment_id},
+                )
+            assignment.save(update_fields=["ai_generation_status"])
+
+        bump_teacher_cache_version(request.user.pk)
+        assignment.refresh_from_db()
+        return self.success_response(
+            AssignmentListSerializer(assignment).data,
+            "Assignment updated" + (" and questions regenerated" if should_regen else "")
+        )
+
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
