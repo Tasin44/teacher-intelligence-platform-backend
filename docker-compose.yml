@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      network: host
     command: gunicorn aamyproject.wsgi:application --bind 0.0.0.0:8000 --workers 3
     ports:
       - "8037:8000"
