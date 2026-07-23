@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # ─────────────────────────────────────────────
-# SECURITY
+# ENVIRONMENT & SECURITY
 # ─────────────────────────────────────────────
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
@@ -31,10 +31,18 @@ SECRET_KEY = os.environ.get(
 )
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "local")
+
+if ENVIRONMENT == 'server':
+    default_allowed_hosts = 'api.teachersaipet.com'
+    default_cors_origins = 'https://admin.teachersaipet.com,https://edu.teachersaipet.com'
+else:
+    default_allowed_hosts = 'localhost,127.0.0.1,10.10.29.34'
+    default_cors_origins = 'http://localhost:3000'
 
 ALLOWED_HOSTS = [
     h.strip()
-    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,10.10.29.34").split(",")
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", default_allowed_hosts).split(",")
     if h.strip()
 ]
 
@@ -84,6 +92,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -115,12 +124,24 @@ WSGI_APPLICATION = "aamyproject.wsgi.application"
 # ─────────────────────────────────────────────
 # DATABASE
 # ─────────────────────────────────────────────
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if ENVIRONMENT == 'server':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'proon_db'),
+            'USER': os.environ.get('DB_USER', 'proon_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # ─────────────────────────────────────────────
@@ -163,7 +184,7 @@ CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL_ORIGINS", "False").lower
 CORS_ALLOWED_ORIGINS = [
     o.strip()
     for o in os.environ.get(
-        "CORS_ALLOWED_ORIGINS", "http://localhost:3000"
+        "CORS_ALLOWED_ORIGINS", default_cors_origins
     ).split(",")
     if o.strip()
 ]
